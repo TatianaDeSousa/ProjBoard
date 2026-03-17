@@ -213,15 +213,19 @@ const ProjectDetail = () => {
               </div>
               
               <div className="flex flex-wrap gap-3 shrink-0 pt-2 lg:pt-10">
+                <div className="flex bg-slate-100/50 p-1.5 rounded-2xl ring-1 ring-slate-200">
+                  <button onClick={() => addFeedback(project.id, 'good')} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-emerald-500" title="Client Satisfait"><CheckCircle2 size={18} /></button>
+                  <button onClick={() => addFeedback(project.id, 'medium')} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-orange-500" title="Client Mitigé"><Clock size={18} /></button>
+                  <button onClick={() => addFeedback(project.id, 'difficult')} className="p-2 hover:bg-white hover:shadow-sm rounded-xl transition-all text-red-500" title="Client Difficile"><AlertCircle size={18} /></button>
+                </div>
                 <Button 
                   variant="outline" 
                   className="gap-2 h-12 px-6 border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-black shadow-sm"
                   onClick={() => {
                     recordIteration(project.id);
-                    alert("Retour client enregistré.");
                   }}
                 >
-                  <RefreshCcw size={18} /> Retour Client ({project.iterations || 0})
+                  <RefreshCcw size={18} /> Itération ({project.iterations || 0})
                 </Button>
                 <Button variant="outline" className="h-12 border-slate-200 text-slate-600 font-black shadow-sm" onClick={() => setIsEditing(true)}>Modifier</Button>
                 <Button 
