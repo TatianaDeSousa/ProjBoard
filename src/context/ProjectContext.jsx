@@ -12,7 +12,7 @@ export const useProjects = () => {
 };
 
 export const ProjectProvider = ({ children }) => {
-  const { currentUser, getUserTeams } = useAuth();
+  const { currentUser, getUserTeams, addNotification, teams } = useAuth();
   
   const [projects, setProjects] = useState(() => {
     const savedData = localStorage.getItem('projboard_data');
@@ -224,6 +224,23 @@ export const ProjectProvider = ({ children }) => {
         };
         updated.logs = [newLog, ...(updated.logs || [])];
 
+        // Notification if status changed
+        if (updates.status && updates.status !== p.status) {
+          const team = teams.find(t => t.id === p.teamId);
+          const membersToNotify = team ? team.members : [p.ownerId];
+          
+          membersToNotify.forEach(userId => {
+            if (userId !== currentUser.id) {
+              addNotification(userId, {
+                type: 'status_change',
+                projectId: p.id,
+                projectName: p.name,
+                message: `Statut "${p.name}" : ${updates.status}`
+              });
+            }
+          });
+        }
+
         return updated;
       }
       return p;
@@ -298,6 +315,22 @@ export const ProjectProvider = ({ children }) => {
           timestamp: new Date().toISOString()
         };
         updated.logs = [newLog, ...(updated.logs || [])];
+
+        // Notification if milestone status changed
+        if (updates.status && updates.status !== milestone.status) {
+          const team = teams.find(t => t.id === p.teamId);
+          const membersToNotify = team ? team.members : [p.ownerId];
+          
+          membersToNotify.forEach(userId => {
+            if (userId !== currentUser.id) {
+              addNotification(userId, {
+                type: 'status_change',
+                projectId: p.id,
+                message: `Jalon "${milestone?.name}" : ${updates.status}`
+              });
+            }
+          });
+        }
 
         return updated;
       }

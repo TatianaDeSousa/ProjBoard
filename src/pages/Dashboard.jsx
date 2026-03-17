@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, Input, cn } from '../components/ui';
 import AIAttackPlan from '../components/AIAttackPlan';
 import VisualCalendar from '../components/VisualCalendar';
-import { Plus, Search, Calendar, ChevronRight, AlertCircle, Filter, Users, LogOut, User, Contact, Activity, Briefcase } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronRight, AlertCircle, Users, LogOut, User, Contact, Activity, Briefcase, Bell, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -35,7 +35,8 @@ const ProjectList = ({ projects, title, icon: Icon }) => (
             console.error("Error formatting date", e);
           }
 
-          return (            <Link key={project.id} to={`/project/${project.id}`} className="block h-full transition-all duration-300 hover:scale-[1.02]">
+          return (
+            <Link key={project.id} to={`/project/${project.id}`} className="block h-full transition-all duration-300 hover:scale-[1.02]">
               <Card className="p-6 hover:shadow-2xl hover:shadow-primary/5 transition-all border-none h-full flex flex-col justify-between group">
                 <div>
                   <div className="flex justify-between items-start mb-6">
@@ -98,9 +99,23 @@ const ProjectList = ({ projects, title, icon: Icon }) => (
                 </div>
 
                 <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-50 text-sm">
-                  <div className="flex items-center gap-2 text-slate-400 group-hover:text-slate-600 transition-colors">
-                    <Calendar size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">{deadlineStr}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-slate-400 group-hover:text-slate-600 transition-colors">
+                      <Calendar size={14} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">{deadlineStr}</span>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const clientUrl = `${window.location.origin}/client?token=${project.shareToken}`;
+                        navigator.clipboard.writeText(clientUrl);
+                        alert("Lien client copié !");
+                      }}
+                      className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-primary hover:text-indigo-700 transition-colors bg-primary/5 px-2 py-1 rounded-md"
+                    >
+                      <LinkIcon size={10} /> Lien Client
+                    </button>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary/10 group-hover:text-primary transition-all">
                     <ChevronRight size={16} />
@@ -117,7 +132,7 @@ const ProjectList = ({ projects, title, icon: Icon }) => (
 
 const Dashboard = () => {
   const { projects } = useProjects();
-  const { currentUser, logout, getUserTeams } = useAuth();
+  const { currentUser, logout, getUserTeams, getUserNotifications } = useAuth();
   const navigate = useNavigate();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,7 +147,9 @@ const Dashboard = () => {
   if (!currentUser) return null;
 
   const teams = (currentUser && typeof getUserTeams === 'function') ? getUserTeams() : [];
-  // Consider solo if no teams or only one team with just the current user
+  const notifications = typeof getUserNotifications === 'function' ? getUserNotifications() : [];
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const isSolo = teams.length === 0 || (teams.length === 1 && teams[0].members.length <= 1);
 
   const handleLogout = () => {
@@ -190,28 +207,38 @@ const Dashboard = () => {
           <p className="text-muted-foreground mt-1 font-medium">Bonjour, {currentUser.name}</p>
         </div>
         
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 items-center">
           <Link to="/contacts">
-            <Button variant="outline" className="gap-2 font-bold">
-              <Contact size={18} /> Contacts
+            <Button variant="outline" size="sm" className="gap-2 font-bold h-10">
+              <Contact size={16} /> Contacts
             </Button>
           </Link>
           <Link to="/teams">
-            <Button variant="outline" className="gap-2 font-bold">
-              <Users size={18} /> {isSolo ? "Créer un Groupe" : "Mes Groupes"}
+            <Button variant="outline" size="sm" className="gap-2 font-bold h-10">
+              <Users size={16} /> {isSolo ? "Créer un Groupe" : "Mes Groupes"}
             </Button>
           </Link>
           <Link to="/team-workload">
-            <Button variant="outline" className="gap-2 font-bold border-primary/20 text-primary hover:bg-primary/5">
-              <Activity size={18} /> {isSolo ? "Mon Planning" : "Charge Équipe"}
+            <Button variant="outline" size="sm" className="gap-2 font-bold border-primary/20 text-primary hover:bg-primary/5 h-10">
+              <Activity size={16} /> {isSolo ? "Mon Planning" : "Charge Équipe"}
+            </Button>
+          </Link>
+          <Link to="/notifications" className="relative">
+            <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:text-primary transition-colors bg-white shadow-sm ring-1 ring-black/5">
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                  {unreadCount}
+                </span>
+              )}
             </Button>
           </Link>
           <Link to="/project/new">
-            <Button className="gap-2 font-bold shadow-lg shadow-primary/20">
-              <Plus size={18} /> Nouveau projet
+            <Button size="sm" className="gap-2 font-bold shadow-lg shadow-primary/20 h-10">
+              <Plus size={16} /> Nouveau
             </Button>
           </Link>
-          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-red-600">
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="h-10 w-10 text-muted-foreground hover:text-red-600">
             <LogOut size={18} />
           </Button>
         </div>

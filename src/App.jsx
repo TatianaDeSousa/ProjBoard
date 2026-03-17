@@ -13,6 +13,7 @@ import JoinTeam from './pages/JoinTeam';
 import Teams from './pages/Teams';
 import Contacts from './pages/Contacts';
 import TeamWorkload from './pages/TeamWorkload';
+import Notifications from './pages/Notifications';
 import './App.css';
 
 function App() {
@@ -32,7 +33,9 @@ function App() {
               <Route path="/project/new" element={<NewProject />} />
               <Route path="/project/:id" element={<ProjectDetail />} />
               <Route path="/share/:shareToken" element={<ShareView />} />
+              <Route path="/client" element={<ShareView />} />
               <Route path="/team-workload" element={<TeamWorkload />} />
+              <Route path="/notifications" element={<Notifications />} />
             </Routes>
           </div>
         </Router>

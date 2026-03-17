@@ -6,26 +6,36 @@ import { UserPlus, LogIn, AlertCircle } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, currentUser } = useAuth();
+  const { signup, currentUser, externalInvites } = useAuth();
   const [searchParams] = useSearchParams();
-  const inviteToken = searchParams.get('invite');
+  const teamToken = searchParams.get('invite');
+  const inviteToken = searchParams.get('inviteToken');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    if (inviteToken) {
+      const invite = externalInvites.find(i => i.token === inviteToken);
+      if (invite) {
+        setEmail(invite.email);
+      }
+    }
+  }, [inviteToken, externalInvites]);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (currentUser) {
-      navigate(inviteToken ? `/join/${inviteToken}` : '/');
+      navigate(teamToken ? `/join/${teamToken}` : '/');
     }
-  }, [currentUser, navigate, inviteToken]);
+  }, [currentUser, navigate, teamToken]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     try {
       signup(email, password, name);
-      const redirect = inviteToken ? `/join/${inviteToken}` : '/';
+      const redirect = teamToken ? `/join/${teamToken}` : '/';
       navigate(redirect);
     } catch (err) {
       setError(err.message);
@@ -104,7 +114,7 @@ const Signup = () => {
           <p className="text-xs font-black text-slate-300 uppercase tracking-widest leading-relaxed">
             Déjà membre du réseau ?
           </p>
-          <Link to={`/login${inviteToken ? `?invite=${inviteToken}` : ''}`} className="block">
+          <Link to={`/login${teamToken ? `?invite=${teamToken}` : ''}`} className="block">
             <Button variant="outline" className="w-full h-14 gap-3 font-black rounded-2xl bg-white border-slate-200 text-slate-600 hover:border-primary/40 hover:text-primary transition-all">
               <LogIn size={20} /> Se connecter
             </Button>

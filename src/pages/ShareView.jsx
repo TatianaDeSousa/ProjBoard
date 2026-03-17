@@ -1,16 +1,20 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { Card, Badge } from '../components/ui';
-import { CheckCircle2, Circle, Clock, Info, ShieldCheck } from 'lucide-react';
+import { Card, Badge, cn } from '../components/ui';
+import { CheckCircle2, Circle, Clock, Info, ShieldCheck, Calendar, Activity, History } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const ShareView = () => {
-  const { shareToken } = useParams();
+  const { shareToken: pathToken } = useParams();
+  const [searchParams] = useSearchParams();
+  const queryToken = searchParams.get('token');
+  const token = pathToken || queryToken;
+  
   const { projects, addFeedback } = useProjects();
   
-  const project = projects.find(p => p.shareToken === shareToken);
+  const project = projects.find(p => p.shareToken === token);
 
   if (!project) {
     return (
@@ -33,7 +37,7 @@ const ShareView = () => {
         <span>Espace de Collaboration Sécurisé — Synchronisation en Temps Réel</span>
       </div>
 
-      <div className="container mx-auto px-4 py-20 max-w-4xl animate-in pb-32">
+      <div className="container mx-auto px-4 py-20 max-w-5xl animate-in pb-32">
         <div className="text-center mb-16 scale-in">
           <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-10 ring-1 ring-primary/20">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -41,7 +45,7 @@ const ShareView = () => {
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 mb-6 leading-[0.9]">{project.name}</h1>
           <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto leading-relaxed">
-            Suivi stratégique de l'avancement de la mission pour <span className="text-slate-900 font-black tracking-tight underline decoration-primary/30 underline-offset-4">{project.client}</span>
+            Suivi stratégique de l'avancement de la mission — Données actualisées en temps réel.
           </p>
         </div>
 
@@ -117,69 +121,80 @@ const ShareView = () => {
           </Card>
         </div>
 
-        <div className="space-y-8 mt-24">
-          <div className="flex items-center justify-between px-4 mb-2">
-            <h3 className="text-2xl font-black tracking-tighter text-slate-900">Itapes Clefs & Chronologie</h3>
-            <div className="h-0.5 flex-1 mx-8 bg-slate-100 rounded-full hidden md:block" />
-            <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest text-slate-400">{project.milestones.length} ÉTAPES</Badge>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            {project.milestones.length === 0 ? (
-              <div className="text-center py-20 bg-white/50 rounded-[2rem] border-2 border-dashed border-slate-200">
-                <p className="text-sm font-black text-slate-300 uppercase tracking-widest">En attente de planification...</p>
-              </div>
-            ) : (
-              project.milestones.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).map((milestone, idx) => (
-                <div 
-                  key={milestone.id} 
-                  className={cn(
-                    "p-8 rounded-[2rem] bg-white border-none ring-1 ring-black/5 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 group scale-in",
-                    milestone.status === 'done' ? "opacity-60 bg-slate-50/50" : "shadow-xl shadow-indigo-500/5 hover:ring-primary/40"
-                  )}
-                  style={{ animationDelay: `${400 + (idx * 50)}ms` }}
-                >
-                  <div className="flex items-center gap-6">
-                    <div className={cn(
-                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
-                      milestone.status === 'done' ? "bg-primary text-white" : "bg-slate-50 text-slate-300 group-hover:bg-white group-hover:shadow-lg"
-                    )}>
-                      {milestone.status === 'done' ? (
-                        <CheckCircle2 size={24} />
-                      ) : milestone.status === 'in_progress' ? (
-                        <div className="relative">
-                           <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
-                           <Clock size={24} className="text-primary relative" />
-                        </div>
-                      ) : (
-                        <Circle size={24} />
-                      )}
-                    </div>
-                    <div>
-                      <p className={cn(
-                        "font-black text-xl tracking-tight transition-all",
-                        milestone.status === 'done' ? "text-slate-400 line-through decoration-primary/20" : "text-slate-900"
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-24">
+          <div className="space-y-8">
+            <div className="flex items-center justify-between px-4 mb-2">
+              <h3 className="text-2xl font-black tracking-tighter text-slate-900">Livrables & Jalons</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {project.milestones.length === 0 ? (
+                <div className="text-center py-20 bg-white/50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                  <p className="text-sm font-black text-slate-300 uppercase tracking-widest">En attente de planification...</p>
+                </div>
+              ) : (
+                project.milestones.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).map((milestone, idx) => (
+                  <div 
+                    key={milestone.id} 
+                    className={cn(
+                      "p-6 rounded-[2rem] bg-white border-none ring-1 ring-black/5 transition-all flex items-center justify-between gap-6 group scale-in",
+                      milestone.status === 'done' ? "opacity-60 bg-slate-50/50" : "shadow-xl shadow-indigo-500/5"
+                    )}
+                    style={{ animationDelay: `${400 + (idx * 50)}ms` }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                        milestone.status === 'done' ? "bg-emerald-500 text-white" : "bg-slate-50 text-slate-300"
                       )}>
-                        {milestone.name}
-                      </p>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
-                        Échéance : {format(new Date(milestone.dueDate), 'dd MMMM', { locale: fr })}
-                      </p>
+                        {milestone.status === 'done' ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                      </div>
+                      <div>
+                        <p className={cn(
+                          "font-black text-base tracking-tight transition-all",
+                          milestone.status === 'done' ? "text-slate-400 line-through" : "text-slate-900"
+                        )}>
+                          {milestone.name}
+                        </p>
+                      </div>
                     </div>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-slate-100">
+                      {format(new Date(milestone.dueDate), 'dd MMM', { locale: fr })}
+                    </Badge>
                   </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
-                      milestone.status === 'done' ? "bg-slate-100 text-slate-400" : 
-                      milestone.status === 'in_progress' ? "bg-primary/10 text-primary" : "bg-slate-50 text-slate-400"
-                    )}>
-                      {milestone.status === 'done' ? 'Livré' : milestone.status === 'in_progress' ? 'Intégration' : 'File d\'attente'}
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="flex items-center justify-between px-4 mb-2">
+              <h3 className="text-2xl font-black tracking-tighter text-slate-900">Fil d'actualité</h3>
+              <History size={20} className="text-slate-300" />
+            </div>
+
+            <div className="relative space-y-6 before:absolute before:left-8 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+              {(project.logs || []).slice(0, 8).map((log, idx) => (
+                <div key={log.id} className="relative flex gap-6 animate-in slide-in-from-left" style={{ animationDelay: `${600 + (idx * 50)}ms` }}>
+                  <div className="w-16 h-16 rounded-2xl bg-white ring-1 ring-black/5 flex items-center justify-center shrink-0 z-10 shadow-sm">
+                    {log.action.includes('Chrono') ? <Clock size={20} className="text-indigo-400" /> : 
+                     log.action.includes('Jalon') ? <CheckCircle2 size={20} className="text-emerald-400" /> : 
+                     log.action.includes('Humeur') ? <Activity size={20} className="text-orange-400" /> : 
+                     <Info size={20} className="text-slate-400" />}
+                  </div>
+                  <div className="flex-1 pt-2">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-primary">{log.action}</span>
+                      <span className="text-[9px] font-bold text-slate-300">• {format(new Date(log.timestamp), 'HH:mm', { locale: fr })}</span>
                     </div>
+                    <p className="text-sm font-bold text-slate-700 leading-snug">{log.details}</p>
+                    <p className="text-[10px] text-slate-400 font-medium mt-1">
+                      {format(new Date(log.timestamp), 'eeee dd MMMM', { locale: fr })}
+                    </p>
                   </div>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
           </div>
         </div>
 
@@ -194,10 +209,5 @@ const ShareView = () => {
     </div>
   );
 };
-
-// Helper for class names
-function cn(...inputs) {
-  return inputs.filter(Boolean).join(' ');
-}
 
 export default ShareView;

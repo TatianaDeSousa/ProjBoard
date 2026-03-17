@@ -31,6 +31,16 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('projboard_notifications');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [externalInvites, setExternalInvites] = useState(() => {
+    const saved = localStorage.getItem('projboard_external_invites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem('projboard_auth', JSON.stringify(currentUser));
   }, [currentUser]);
@@ -47,6 +57,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('projboard_invites', JSON.stringify(invitations));
   }, [invitations]);
 
+  useEffect(() => {
+    localStorage.setItem('projboard_notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('projboard_external_invites', JSON.stringify(externalInvites));
+  }, [externalInvites]);
+
   const signup = (email, password, name) => {
     if (users.find(u => u.email === email)) {
       throw new Error("Cet email est déjà utilisé.");
@@ -55,12 +73,17 @@ export const AuthProvider = ({ children }) => {
     const newUser = {
       id: crypto.randomUUID(),
       email,
-      password, // In a real app, this would be hashed
+      password,
       name,
       createdAt: new Date().toISOString()
     };
 
-    // Create a default personal team for the user
+    // Check for external invites for this email
+    const pendingInvites = externalInvites.filter(inv => inv.email.toLowerCase() === email.toLowerCase());
+    
+    setUsers(prev => [...prev, newUser]);
+    
+    // Create teams state update
     const defaultTeam = {
       id: crypto.randomUUID(),
       name: `Équipe de ${name}`,
@@ -68,8 +91,23 @@ export const AuthProvider = ({ children }) => {
       members: [newUser.id]
     };
 
-    setUsers(prev => [...prev, newUser]);
-    setTeams(prev => [...prev, defaultTeam]);
+    setTeams(prev => {
+      let updatedTeams = [...prev, defaultTeam];
+      // Auto-join teams from external invites
+      pendingInvites.forEach(inv => {
+        updatedTeams = updatedTeams.map(t => {
+          if (t.id === inv.teamId && !t.members.includes(newUser.id)) {
+            return { ...t, members: [...t.members, newUser.id] };
+          }
+          return t;
+        });
+      });
+      return updatedTeams;
+    });
+
+    // Remove consumed external invites
+    setExternalInvites(prev => prev.filter(inv => inv.email.toLowerCase() !== email.toLowerCase()));
+
     setCurrentUser(newUser);
     return newUser;
   };
@@ -161,11 +199,87 @@ export const AuthProvider = ({ children }) => {
     return teams.filter(t => t.members && t.members.includes(currentUser.id));
   };
 
+  const addNotification = (userId, notification) => {
+    const newNotif = {
+      id: crypto.randomUUID(),
+      userId,
+      read: false,
+      timestamp: new Date().toISOString(),
+      ...notification
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  const markNotificationAsRead = (notifId) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+  };
+
+  const inviteUserToTeam = (teamId, email) => {
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const team = teams.find(t => t.id === teamId);
+    
+    if (user) {
+      // Internal notification
+      if (team.members.includes(user.id)) {
+        throw new Error("Cet utilisateur est déjà membre de l'équipe.");
+      }
+      
+      // Check if already invited
+      if (notifications.find(n => n.userId === user.id && n.teamId === teamId && n.type === 'team_invite' && !n.read)) {
+        throw new Error("Une invitation est déjà en attente pour cet utilisateur.");
+      }
+
+      addNotification(user.id, {
+        type: 'team_invite',
+        teamId,
+        teamName: team.name,
+        fromName: currentUser.name,
+        message: `${currentUser.name} vous invite à rejoindre l'équipe "${team.name}"`
+      });
+      return { type: 'internal' };
+    } else {
+      // External invite
+      const token = crypto.randomUUID();
+      const newExtInvite = {
+        token,
+        teamId,
+        email: email.toLowerCase(),
+        createdAt: new Date().toISOString()
+      };
+      setExternalInvites(prev => [...prev, newExtInvite]);
+      return { type: 'external', token };
+    }
+  };
+
+  const acceptTeamInvitation = (notifId) => {
+    const notif = notifications.find(n => n.id === notifId);
+    if (!notif) return;
+
+    setTeams(prev => prev.map(t => {
+      if (t.id === notif.teamId && !t.members.includes(currentUser.id)) {
+        return { ...t, members: [...t.members, currentUser.id] };
+      }
+      return t;
+    }));
+
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true, status: 'accepted' } : n));
+  };
+
+  const rejectTeamInvitation = (notifId) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true, status: 'rejected' } : n));
+  };
+
+  const getUserNotifications = () => {
+    if (!currentUser) return [];
+    return notifications.filter(n => n.userId === currentUser.id);
+  };
+
   return (
     <AuthContext.Provider value={{
       currentUser,
       users,
       teams,
+      notifications,
       signup,
       login,
       logout,
@@ -176,7 +290,14 @@ export const AuthProvider = ({ children }) => {
       removeMemberFromTeam,
       createInvite,
       joinTeam,
-      getUserTeams
+      getUserTeams,
+      inviteUserToTeam,
+      acceptTeamInvitation,
+      rejectTeamInvitation,
+      markNotificationAsRead,
+      getUserNotifications,
+      addNotification,
+      externalInvites
     }}>
       {children}
     </AuthContext.Provider>

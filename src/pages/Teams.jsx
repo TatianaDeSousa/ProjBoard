@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 const Teams = () => {
-  const { currentUser, getUserTeams, createTeam, deleteTeam, addMemberByEmail, removeMemberFromTeam, users } = useAuth();
+  const { currentUser, getUserTeams, createTeam, deleteTeam, inviteUserToTeam, removeMemberFromTeam, users, externalInvites } = useAuth();
   const { allProjects, updateProject } = useProjects();
   const teams = getUserTeams();
   
@@ -20,6 +20,7 @@ const Teams = () => {
   const [memberEmail, setMemberEmail] = useState('');
   const [showProjectLinker, setShowProjectLinker] = useState(null);
   const [error, setError] = useState(null);
+  const [inviteResult, setInviteResult] = useState(null); // { type: 'external', token: '...', email: '...' }
 
   const handleCreateTeam = (e) => {
     e.preventDefault();
@@ -30,9 +31,16 @@ const Teams = () => {
   };
 
   const handleAddMember = (teamId) => {
+    if (!memberEmail.trim()) return;
     try {
-      addMemberByEmail(teamId, memberEmail);
-      setMemberEmail('');
+      const result = inviteUserToTeam(teamId, memberEmail);
+      if (result.type === 'internal') {
+        alert("Invitation envoyée au collaborateur !");
+        setMemberEmail('');
+      } else {
+        setInviteResult({ ...result, email: memberEmail });
+        setMemberEmail('');
+      }
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -340,6 +348,45 @@ const Teams = () => {
           })
         )}
       </div>
+
+      {inviteResult && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <Card className="w-full max-w-lg p-10 bg-white shadow-2xl rounded-[3rem] border-none scale-in">
+             <div className="w-20 h-20 bg-primary/10 text-primary rounded-[2rem] flex items-center justify-center mx-auto mb-8">
+               <Mail size={40} />
+             </div>
+             <h2 className="text-3xl font-black text-center text-slate-900 mb-4 tracking-tighter">Inviter à nous rejoindre</h2>
+             <p className="text-center text-slate-500 font-medium mb-10">
+               L'utilisateur <span className="text-slate-900 font-black">{inviteResult.email}</span> n'a pas encore de compte. Partagez-lui ce lien d'accès privilégié :
+             </p>
+             
+             <div className="bg-slate-50 p-6 rounded-3xl mb-8 ring-1 ring-black/5 flex items-center gap-4 group">
+               <div className="flex-1 overflow-hidden">
+                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Lien d'invitation unique</p>
+                 <p className="text-sm font-bold text-slate-900 truncate">
+                   {`${window.location.origin}/signup?inviteToken=${inviteResult.token}`}
+                 </p>
+               </div>
+               <Button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/signup?inviteToken=${inviteResult.token}`);
+                  alert("Lien copié !");
+                }}
+                className="shrink-0 h-10 w-10 p-0 rounded-xl gradient-primary border-none shadow-lg shadow-primary/20"
+               >
+                 <LinkIcon size={18} />
+               </Button>
+             </div>
+
+             <div className="flex flex-col gap-3">
+               <Button onClick={() => setInviteResult(null)} className="h-14 w-full rounded-2xl font-black text-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
+                 Terminer
+               </Button>
+               <p className="text-[10px] font-black uppercase text-center text-slate-400 tracking-[0.2em] mt-2">Dès son inscription, il rejoindra automatiquement le groupe.</p>
+             </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
