@@ -27,116 +27,154 @@ const ShareView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="bg-primary text-primary-foreground py-2 px-4 shadow-sm flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-widest">
-        <ShieldCheck size={14} /> Vue partagée sécurisée — Actualisée en temps réel
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <div className="gradient-primary text-white py-3 px-4 shadow-sm flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] relative z-10">
+        <ShieldCheck size={16} className="text-white/80" /> 
+        <span>Espace de Collaboration Sécurisé — Synchronisation en Temps Réel</span>
       </div>
 
-      <div className="container mx-auto px-4 py-12 max-w-4xl animate-in">
-        <div className="text-center mb-12">
-          <div className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-bold mb-6">
-            Espace Client
+      <div className="container mx-auto px-4 py-20 max-w-4xl animate-in pb-32">
+        <div className="text-center mb-16 scale-in">
+          <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-10 ring-1 ring-primary/20">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            Accès Client Privilégié
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">{project.name}</h1>
-          <p className="text-xl text-muted-foreground font-medium">Suivi d'avancement pour {project.client}</p>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 mb-6 leading-[0.9]">{project.name}</h1>
+          <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto leading-relaxed">
+            Suivi stratégique de l'avancement de la mission pour <span className="text-slate-900 font-black tracking-tight underline decoration-primary/30 underline-offset-4">{project.client}</span>
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <Card className="p-6 md:col-span-2 space-y-6 shadow-xl border-none ring-1 ring-black/5">
-            <div className="flex justify-between items-end">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <Card className="p-10 md:col-span-2 space-y-10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border-none bg-white rounded-[2.5rem] ring-1 ring-black/5 scale-in" style={{ animationDelay: '100ms' }}>
+            <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">État actuel</p>
-                <Badge variant={project.status} className="text-sm px-4 py-1">
-                  {project.status === 'on_track' ? 'En bonne voie' : 
-                   project.status === 'at_risk' ? 'À risque' : 
-                   project.status === 'delayed' ? 'En retard' : 'Terminé'}
-                </Badge>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Statut Opérationnel</p>
+                <div className="scale-110 origin-left">
+                  <Badge variant={project.status} className="px-6 py-2 rounded-full font-black text-[10px]">
+                    {project.status === 'on_track' ? '🚀 EN BONNE VOIE' : 
+                     project.status === 'at_risk' ? '⚠️ À RISQUE' : 
+                     project.status === 'delayed' ? '🔴 EN RETARD' : '✅ TERMINÉ'}
+                  </Badge>
+                </div>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">Progression</p>
-                <p className="text-3xl font-black text-primary">{project.progress}%</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Complétion</p>
+                <p className="text-5xl font-black text-slate-900 tracking-tighter">{project.progress}<span className="text-xl text-primary ml-1">%</span></p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="h-4 w-full bg-muted rounded-full overflow-hidden shadow-inner ring-4 ring-muted">
+            <div className="space-y-4">
+               <div className="h-6 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner p-1 ring-1 ring-slate-100">
                 <div 
-                  className="h-full bg-primary transition-all duration-1000 ease-out"
+                  className="h-full gradient-primary rounded-full transition-all duration-[2000ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] relative shadow-lg"
                   style={{ width: `${project.progress}%` }}
-                />
+                >
+                  <div className="absolute top-0 right-0 h-full w-4 bg-white/20 blur-sm rounded-full" />
+                </div>
+              </div>
+              <div className="flex justify-between text-[9px] font-black text-slate-300 uppercase tracking-widest px-1">
+                <span>Phase Initiale</span>
+                <span>Lancement</span>
+                <span>Développement</span>
+                <span>Livraison</span>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 flex flex-col justify-center text-center space-y-4 bg-white shadow-lg border-none">
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Date de livraison</p>
-              <p className="text-2xl font-black text-slate-800">
-                {format(new Date(project.deadline), 'dd MMM yyyy', { locale: fr })}
+          <Card className="p-10 flex flex-col justify-between space-y-8 bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border-none rounded-[2.5rem] ring-1 ring-black/5 scale-in" style={{ animationDelay: '200ms' }}>
+            <div className="text-center">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Date Prévue</p>
+              <div className="w-16 h-16 bg-slate-50 rounded-[1.25rem] flex items-center justify-center mx-auto mb-4 text-primary shadow-inner">
+                <Clock size={32} />
+              </div>
+              <p className="text-2xl font-black text-slate-900 tracking-tighter">
+                {format(new Date(project.deadline), 'dd.MM.yy', { locale: fr })}
               </p>
             </div>
             
-            <div className="pt-4 border-t">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Comment ça se passe ?</p>
-              <div className="flex justify-center gap-3">
-                <button 
-                  onClick={() => addFeedback(project.id, 'good')}
-                  className="w-10 h-10 rounded-xl bg-green-500/10 text-green-600 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm text-xl"
-                  title="Bien"
-                >
-                  😊
-                </button>
-                <button 
-                  onClick={() => addFeedback(project.id, 'medium')}
-                  className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 flex items-center justify-center hover:bg-orange-50 hover:text-white transition-all shadow-sm text-xl"
-                  title="Moyen"
-                >
-                  😐
-                </button>
-                <button 
-                  onClick={() => addFeedback(project.id, 'difficult')}
-                  className="w-10 h-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm text-xl"
-                  title="Difficile"
-                >
-                  😟
-                </button>
+            <div className="pt-8 border-t border-slate-50">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 text-center">Partagez votre ressenti</p>
+              <div className="flex justify-center gap-4">
+                {[
+                  { emoji: '🔥', label: 'good', color: 'hover:bg-orange-50 hover:text-orange-500' },
+                  { emoji: '👌', label: 'medium', color: 'hover:bg-indigo-50 hover:text-primary' },
+                  { emoji: '🆘', label: 'difficult', color: 'hover:bg-red-50 hover:text-red-500' }
+                ].map((item, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => addFeedback(project.id, item.label)}
+                    className={cn(
+                      "w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center transition-all shadow-inner text-xl hover:scale-110",
+                      item.color
+                    )}
+                  >
+                    {item.emoji}
+                  </button>
+                ))}
               </div>
             </div>
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold px-2 flex items-center gap-2">
-            <div className="w-1.5 h-6 bg-primary rounded-full" />
-            Chronologie du projet
-          </h3>
+        <div className="space-y-8 mt-24">
+          <div className="flex items-center justify-between px-4 mb-2">
+            <h3 className="text-2xl font-black tracking-tighter text-slate-900">Itapes Clefs & Chronologie</h3>
+            <div className="h-0.5 flex-1 mx-8 bg-slate-100 rounded-full hidden md:block" />
+            <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest text-slate-400">{project.milestones.length} ÉTAPES</Badge>
+          </div>
           
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
             {project.milestones.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground italic">Aucune étape renseignée pour le moment.</p>
+              <div className="text-center py-20 bg-white/50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                <p className="text-sm font-black text-slate-300 uppercase tracking-widest">En attente de planification...</p>
+              </div>
             ) : (
-              project.milestones.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).map(milestone => (
-                <div key={milestone.id} className="flex gap-4 items-start relative pl-2 group">
-                  <div className="shrink-0 mt-1">
-                    {milestone.status === 'done' ? (
-                      <CheckCircle2 size={24} className="text-primary" />
-                    ) : milestone.status === 'in_progress' ? (
-                      <Clock size={24} className="text-primary animate-pulse" />
-                    ) : (
-                      <Circle size={24} className="text-muted-foreground/30" />
-                    )}
-                  </div>
-                  <div className="flex-1 pb-4 border-b border-slate-200">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-1">
+              project.milestones.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).map((milestone, idx) => (
+                <div 
+                  key={milestone.id} 
+                  className={cn(
+                    "p-8 rounded-[2rem] bg-white border-none ring-1 ring-black/5 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 group scale-in",
+                    milestone.status === 'done' ? "opacity-60 bg-slate-50/50" : "shadow-xl shadow-indigo-500/5 hover:ring-primary/40"
+                  )}
+                  style={{ animationDelay: `${400 + (idx * 50)}ms` }}
+                >
+                  <div className="flex items-center gap-6">
+                    <div className={cn(
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
+                      milestone.status === 'done' ? "bg-primary text-white" : "bg-slate-50 text-slate-300 group-hover:bg-white group-hover:shadow-lg"
+                    )}>
+                      {milestone.status === 'done' ? (
+                        <CheckCircle2 size={24} />
+                      ) : milestone.status === 'in_progress' ? (
+                        <div className="relative">
+                           <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                           <Clock size={24} className="text-primary relative" />
+                        </div>
+                      ) : (
+                        <Circle size={24} />
+                      )}
+                    </div>
+                    <div>
                       <p className={cn(
-                        "font-bold text-lg",
-                        milestone.status === 'done' ? "text-slate-400 line-through" : "text-slate-800"
+                        "font-black text-xl tracking-tight transition-all",
+                        milestone.status === 'done' ? "text-slate-400 line-through decoration-primary/20" : "text-slate-900"
                       )}>
                         {milestone.name}
                       </p>
-                      <Badge variant="outline" className="w-fit text-[10px] font-bold uppercase tracking-tighter">
-                        {milestone.status === 'done' ? 'Livré' : milestone.status === 'in_progress' ? 'En cours' : 'À venir'}
-                      </Badge>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
+                        Échéance : {format(new Date(milestone.dueDate), 'dd MMMM', { locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
+                      milestone.status === 'done' ? "bg-slate-100 text-slate-400" : 
+                      milestone.status === 'in_progress' ? "bg-primary/10 text-primary" : "bg-slate-50 text-slate-400"
+                    )}>
+                      {milestone.status === 'done' ? 'Livré' : milestone.status === 'in_progress' ? 'Intégration' : 'File d\'attente'}
                     </div>
                   </div>
                 </div>
@@ -145,8 +183,12 @@ const ShareView = () => {
           </div>
         </div>
 
-        <footer className="mt-20 pt-8 border-t text-center text-muted-foreground text-sm">
-          Propulsé par <strong>ProjBoard</strong> — Tous droits réservés.
+        <footer className="mt-32 pt-12 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 px-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg">P</div>
+            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-300">Propulsé par ProjBoard PRO</span>
+          </div>
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-300">© 2024 — Excellence Opérationnelle</p>
         </footer>
       </div>
     </div>

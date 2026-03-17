@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useContacts } from '../context/ContactContext';
-import { Card, Button, Input, Badge } from '../components/ui';
+import { Card, Button, Input, Badge, cn } from '../components/ui';
 import { UserPlus, Search, Phone, Mail, Building, ChevronLeft, Trash2, Edit2, Plus, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

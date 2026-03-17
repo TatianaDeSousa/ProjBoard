@@ -33,42 +33,72 @@ const JoinTeam = () => {
   }, [token, currentUser, joinTeam, navigate]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full p-8 text-center space-y-6 shadow-xl border-none">
+    <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px]" />
+
+      <Card className="max-w-md w-full p-12 text-center space-y-8 shadow-[0_40px_80px_-15px_rgba(0,0,0,0.1)] border-none rounded-[3rem] bg-white/80 backdrop-blur-xl ring-1 ring-white scale-in">
         {status === 'processing' && (
-          <>
-            <div className="inline-flex p-4 bg-primary/10 text-primary rounded-full animate-pulse">
-              <Users size={48} />
+          <div className="animate-in space-y-8">
+            <div className="relative inline-flex mb-4">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping opacity-25" />
+              <div className="relative p-6 bg-primary/5 text-primary rounded-[2rem] ring-1 ring-primary/20">
+                <Users size={40} />
+              </div>
             </div>
-            <h2 className="text-2xl font-bold">Traitement de l'invitation...</h2>
-            <div className="flex justify-center">
-              <Loader2 className="animate-spin text-primary" size={32} />
+            <div className="space-y-4">
+              <h2 className="text-3xl font-black tracking-tighter text-slate-900 leading-none">Traitement de l'invitation</h2>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Synchronisation sécurisée</p>
             </div>
-            <p className="text-muted-foreground">Nous vous ajoutons au groupe ProjBoard.</p>
-          </>
+            <div className="flex justify-center py-4">
+               <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                 <div className="h-full bg-primary animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '40%' }} />
+               </div>
+            </div>
+            <p className="text-slate-400 text-sm font-medium">Nous configurons votre accès privilégié au groupe ProjBoard...</p>
+          </div>
         )}
 
         {status === 'success' && (
-          <>
-            <div className="inline-flex p-4 bg-green-100 text-green-600 rounded-full scale-in">
-              <CheckCircle size={48} />
+          <div className="animate-in space-y-8">
+            <div className="inline-flex p-6 bg-emerald-50 text-emerald-500 rounded-[2rem] ring-1 ring-emerald-500/20 scale-in">
+              <CheckCircle size={40} />
             </div>
-            <h2 className="text-2xl font-bold text-green-700">Bienvenue !</h2>
-            <p className="text-muted-foreground">Vous avez rejoint l'équipe avec succès. Redirection vers le dashboard...</p>
-          </>
+            <div className="space-y-4">
+              <h2 className="text-4xl font-black tracking-tighter text-slate-900 leading-none">C'est validé !</h2>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-emerald-500">Accès Autorisé</p>
+            </div>
+            <p className="text-slate-400 text-sm font-medium">Vous avez rejoint l'équipe avec succès.<br/>Préparation de votre espace de travail...</p>
+          </div>
         )}
 
         {status === 'error' && (
-          <>
-            <div className="inline-flex p-4 bg-red-100 text-red-600 rounded-full">
-              <AlertCircle size={48} />
+          <div className="animate-in space-y-8">
+            <div className="inline-flex p-6 bg-red-50 text-red-500 rounded-[2rem] ring-1 ring-red-500/20">
+              <AlertCircle size={40} />
             </div>
-            <h2 className="text-2xl font-bold text-red-700">Erreur</h2>
-            <p className="text-muted-foreground">{error}</p>
-            <Button onClick={() => navigate('/')} className="w-full">Retour au dashboard</Button>
-          </>
+            <div className="space-y-4">
+              <h2 className="text-3xl font-black tracking-tighter text-slate-900 leading-none">Oups !</h2>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-red-500">Lien expiré ou erroné</p>
+            </div>
+            <p className="text-slate-400 text-sm font-medium">{error}</p>
+            <Button 
+              onClick={() => navigate('/')} 
+              className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] gradient-primary text-white shadow-xl shadow-indigo-500/20"
+            >
+              Retour à l'accueil
+            </Button>
+          </div>
         )}
       </Card>
+      
+      <style>{`
+        @keyframes loading {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(300%); }
+        }
+      `}</style>
     </div>
   );
 };
