@@ -6,17 +6,16 @@ import { Card, Badge, Button, cn } from '../components/ui';
 import { ChevronLeft, Users, Briefcase, AlertTriangle, TrendingUp, User, Target, Zap } from 'lucide-react';
 
 const TeamWorkload = () => {
-  const { allProjects } = useProjects();
-  const { currentUser, getUserTeams, users } = useAuth();
-  const teams = getUserTeams();
+  const { projects } = useProjects();
+  const { currentUser, teams } = useAuth();
   
   // Real project stats
-  const activeProjects = allProjects.filter(p => p.status !== 'done');
-  const personalProjects = activeProjects.filter(p => !p.teamId);
-  const teamProjects = activeProjects.filter(p => p.teamId);
+  const activeProjects = projects.filter(p => p.status !== 'done');
+  const personalProjects = activeProjects.filter(p => !p.team_id);
+  const teamProjects = activeProjects.filter(p => p.team_id);
 
-  // Consider solo if no teams or only one team with just the current user
-  const isSolo = teams.length === 0 || (teams.length === 1 && teams[0].members.length <= 1);
+  // Consider solo if no teams
+  const isSolo = teams.length === 0 || (teams.length === 1 && (teams[0].team_members || []).length <= 1);
 
   return (
     <div className="container mx-auto px-4 py-8 animate-in text-slate-900">

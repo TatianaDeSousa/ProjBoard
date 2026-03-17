@@ -1,16 +1,15 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
-import { Card, Button, Badge } from '../components/ui';
-import { Bell, Check, X, Clock, AlertTriangle, ChevronLeft, Calendar, Info, Users, Activity, ChevronRight } from 'lucide-react';
+import { Card, Button, Badge, cn } from '../components/ui';
+import { Bell, Check, X, Clock, ChevronLeft, Users, Activity, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const Notifications = () => {
-  const { getUserNotifications, acceptTeamInvitation, rejectTeamInvitation, markNotificationAsRead } = useAuth();
+  const { notifications, acceptTeamInvitation, rejectTeamInvitation, markNotificationAsRead } = useAuth();
   const { projects } = useProjects();
-  const notifications = getUserNotifications();
 
   // Generate system notifications for deadlines
   const systemNotifications = projects.filter(p => {
@@ -98,7 +97,7 @@ const Notifications = () => {
                      notif.type === 'deadline' ? 'Alerte Échéance' : 
                      notif.type === 'status_change' ? 'Mise à jour' : 'Notification'}
                   </span>
-                  <span className="text-[10px] text-slate-300 font-bold">• {format(new Date(notif.timestamp), 'HH:mm • dd MMM', { locale: fr })}</span>
+                  <span className="text-[10px] text-slate-300 font-bold">• {format(new Date(notif.created_at || notif.timestamp || new Date()), 'HH:mm • dd MMM', { locale: fr })}</span>
                 </div>
                 <h3 className="text-xl font-black text-slate-900 leading-none">{notif.title || notif.message}</h3>
                 {notif.title && <p className="text-slate-500 font-medium">{notif.message}</p>}
@@ -135,7 +134,7 @@ const Notifications = () => {
                 )}
 
                 {notif.type === 'deadline' && (
-                  <Link to={`/project/${notif.projectId}`}>
+                  <Link to={`/project/${notif.project_id || notif.projectId}`}>
                     <Button className="gap-2 gradient-primary border-none shadow-lg shadow-primary/20 h-12 px-6 font-black rounded-xl">
                       Voir le projet <ChevronRight size={18} />
                     </Button>
@@ -162,5 +161,3 @@ const Notifications = () => {
 };
 
 export default Notifications;
-
-const cn = (...inputs) => inputs.filter(Boolean).join(' ');

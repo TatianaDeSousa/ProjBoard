@@ -11,9 +11,9 @@ import { fr } from 'date-fns/locale';
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { projects, updateProject, deleteProject, addMilestone, updateMilestone, deleteMilestone, recordIteration, toggleTimer, addFeedback } = useProjects();
+  const { projects, updateProject, deleteProject, addMilestone, updateMilestone, deleteMilestone, addFeedback } = useProjects();
   const { contacts, addContact } = useContacts();
-  const { users, teams, currentUser } = useAuth();
+  const { teams, currentUser } = useAuth();
   
   const project = projects.find(p => p.id === id);
   const [isEditing, setIsEditing] = useState(false);
@@ -31,8 +31,8 @@ const ProjectDetail = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Get project team members
-  const projectTeam = teams.find(t => t.id === project?.teamId);
-  const teamMembers = projectTeam ? users.filter(u => projectTeam.members.includes(u.id)) : [];
+  const projectTeam = teams.find(t => t.id === project?.team_id);
+  const teamMembers = (projectTeam?.team_members || []);
 
   const [copyStatus, setCopyStatus] = useState('idle'); // idle, success
 
@@ -66,8 +66,7 @@ const ProjectDetail = () => {
     addMilestone(id, {
       name: newMilestoneName,
       dueDate: new Date(newMilestoneDate).toISOString(),
-      assignee: newMilestoneAssignee,
-      assigneeId: newMilestoneAssigneeId
+      assignee_id: newMilestoneAssigneeId
     });
     
     setNewMilestoneName('');
@@ -140,7 +139,7 @@ const ProjectDetail = () => {
   };
 
   const copyShareLink = () => {
-    const shareUrl = `${window.location.origin}/share/${project.shareToken}`;
+    const shareUrl = `${window.location.origin}/share/${project.share_token}`;
     navigator.clipboard.writeText(shareUrl).then(() => {
       setCopyStatus('success');
       setTimeout(() => setCopyStatus('idle'), 2000);
@@ -222,7 +221,7 @@ const ProjectDetail = () => {
                   variant="outline" 
                   className="gap-2 h-12 px-6 border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-black shadow-sm"
                   onClick={() => {
-                    recordIteration(project.id);
+                    updateProject(project.id, { iterations: (project.iterations || 0) + 1 });
                   }}
                 >
                   <RefreshCcw size={18} /> Itération ({project.iterations || 0})
@@ -290,7 +289,7 @@ const ProjectDetail = () => {
                 </div>
               </div>
 
-              {project.teamId ? (
+              {project.team_id ? (
                 <div className="pt-6 space-y-6 border-t border-slate-100/50">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">Agence: {project.teamName || 'Groupe'}</p>
@@ -332,7 +331,7 @@ const ProjectDetail = () => {
                 Aucune étape définie. Commencez par en ajouter une.
               </div>
             ) : (
-              project.milestones.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).map((milestone, idx) => (
+              project.milestones.sort((a,b) => new Date(a.due_date || a.dueDate) - new Date(b.due_date || b.dueDate)).map((milestone, idx) => (
                 <Card key={milestone.id} className="p-6 flex items-center gap-6 group hover:shadow-2xl hover:shadow-primary/5 transition-all bg-white border-none scale-in" style={{ animationDelay: `${idx * 50}ms` }}>
                   <button 
                     onClick={() => toggleMilestoneStatus(milestone)}
@@ -369,7 +368,7 @@ const ProjectDetail = () => {
                     </div>
                     <div className="flex items-center gap-3 text-sm font-black text-slate-400 uppercase tracking-widest">
                       <Calendar size={14} className="text-primary/40" />
-                      {format(new Date(milestone.dueDate), 'dd MMM yyyy', { locale: fr })}
+                      {format(new Date(milestone.due_date || milestone.dueDate), 'dd MMM yyyy', { locale: fr })}
                     </div>
                     <div className="flex items-center gap-3 text-sm font-black text-slate-900 tracking-tight bg-slate-50/50 p-2 rounded-xl ring-1 ring-black/5 w-fit">
                       <div className="w-6 h-6 rounded-lg bg-white shadow-sm flex items-center justify-center text-[10px] text-primary">

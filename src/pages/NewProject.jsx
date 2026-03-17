@@ -8,9 +8,9 @@ import { ChevronLeft, PlusCircle, Layout, User, Users } from 'lucide-react';
 
 const NewProject = () => {
   const navigate = useNavigate();
-  const { addProject } = useProjects();
+  const { createProject } = useProjects();
   const { contacts } = useContacts();
-  const { currentUser } = useAuth();
+  const { currentUser, teams: userTeams } = useAuth();
   
   const [name, setName] = useState('');
   const [client, setClient] = useState('');
@@ -52,24 +52,23 @@ const NewProject = () => {
     setClient(parts.join(''));
     setShowSuggestions(false);
   };
-  const { getUserTeams } = useAuth();
-  const userTeams = getUserTeams();
   const [isTeamProject, setIsTeamProject] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState(userTeams.length > 0 ? userTeams[0].id : null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !client || !deadline) return;
     
-    const newProject = addProject({
+    const newProject = await createProject({
       name,
-      client: client.replace('@', ''), // Clean up if they didn't finish
+      client: client.replace('@', ''),
       deadline: new Date(deadline).toISOString(),
       description,
       teamId: isTeamProject ? selectedTeamId : null
     });
     
-    navigate(`/project/${newProject.id}`);
+    if (newProject) navigate(`/project/${newProject.id}`);
+    else navigate('/');
   };
 
   return (

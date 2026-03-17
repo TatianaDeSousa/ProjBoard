@@ -10,9 +10,8 @@ import {
 } from 'lucide-react';
 
 const Teams = () => {
-  const { currentUser, getUserTeams, createTeam, deleteTeam, inviteUserToTeam, removeMemberFromTeam, users, externalInvites } = useAuth();
-  const { allProjects, updateProject } = useProjects();
-  const teams = getUserTeams();
+  const { currentUser, teams, createTeam, deleteTeam, inviteUserToTeam, acceptTeamInvitation } = useAuth();
+  const { projects, updateProject } = useProjects();
   
   const [isCreating, setIsCreating] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -48,55 +47,38 @@ const Teams = () => {
     }
   };
 
-  const toggleProjectToTeam = (projectId, teamId) => {
-    const project = allProjects.find(p => p.id === projectId);
+  const toggleProjectToTeam = async (projectId, teamId) => {
+    const project = projects.find(p => p.id === projectId);
     if (!project) return;
-    
-    const newTeamId = project.teamId === teamId ? null : teamId;
-    const team = teams.find(t => t.id === newTeamId);
-    
-    updateProject(projectId, { 
-      teamId: newTeamId,
-      teamName: team ? team.name : null
-    });
+    const newTeamId = project.team_id === teamId ? null : teamId;
+    await updateProject(projectId, { team_id: newTeamId });
   };
 
   const getTeamProjects = (teamId) => {
-    return allProjects.filter(p => p.teamId === teamId);
+    return projects.filter(p => p.team_id === teamId);
   };
 
   const getUserName = (userId) => {
-    const user = users.find(u => u.id === userId);
-    if (user) return user.name;
-    if (userId === currentUser?.id) return currentUser.name;
-    return 'Utilisateur inconnu';
+    const member = teams.flatMap(t => t.team_members || []).find(m => m.user_id === userId);
+    if (member?.profiles) return member.profiles.name;
+    if (userId === currentUser?.id) return currentUser.name || currentUser.email;
+    return userId?.slice(0, 8) || 'Inconnu';
   };
 
-  // Calculate task progress per member in a team
   const getMemberProgress = (team) => {
     const teamProjects = getTeamProjects(team.id);
+    const memberIds = (team.team_members || []).map(m => m.user_id);
     const memberStats = {};
-
-    team.members.forEach(memberId => {
-      memberStats[memberId] = { total: 0, done: 0 };
-    });
-
+    memberIds.forEach(id => { memberStats[id] = { total: 0, done: 0 }; });
     teamProjects.forEach(project => {
-      project.milestones.forEach(m => {
-        if (m.assigneeId && memberStats[m.assigneeId]) {
-          memberStats[m.assigneeId].total++;
-          if (m.status === 'done') memberStats[m.assigneeId].done++;
-        } else if (m.assignee) {
-          // Fallback matching by name if ID is missing (useful for old data)
-          const matchedMember = team.members.find(mid => getUserName(mid) === m.assignee);
-          if (matchedMember) {
-            memberStats[matchedMember].total++;
-            if (m.status === 'done') memberStats[matchedMember].done++;
-          }
+      (project.milestones || []).forEach(m => {
+        const key = m.assignee_id;
+        if (key && memberStats[key]) {
+          memberStats[key].total++;
+          if (m.status === 'done') memberStats[key].done++;
         }
       });
     });
-
     return memberStats;
   };
 
@@ -164,7 +146,8 @@ const Teams = () => {
           teams.map((team, idx) => {
             const teamProjects = getTeamProjects(team.id);
             const memberStats = getMemberProgress(team);
-            const isOwner = team.ownerId === currentUser.id;
+            const isOwner = team.owner_id === currentUser.id;
+            const members = team.team_members || [];
 
             return (
               <Card key={team.id} className="p-0 shadow-2xl shadow-indigo-500/5 border-none bg-white rounded-[3rem] overflow-hidden scale-in" style={{ animationDelay: `${idx * 100}ms` }}>
@@ -174,19 +157,19 @@ const Teams = () => {
                       <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4">
                          <h3 className="text-4xl font-black tracking-tighter text-slate-900">{team.name}</h3>
                          <Badge variant="secondary" className="bg-primary/10 text-primary font-black px-4 py-1 glass border-primary/10">
-                           {team.members.length} OPS
+                           {members.length} OPS
                          </Badge>
                       </div>
                       <div className="flex items-center justify-center md:justify-start gap-3">
                          <div className="flex -space-x-2">
-                            {team.members.slice(0, 3).map(mid => (
-                               <div key={mid} className="w-8 h-8 rounded-full bg-white ring-2 ring-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
-                                 {getUserName(mid).charAt(0)}
+                            {members.slice(0, 3).map(m => (
+                               <div key={m.user_id} className="w-8 h-8 rounded-full bg-white ring-2 ring-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
+                                 {getUserName(m.user_id).charAt(0)}
                                </div>
                             ))}
                          </div>
                          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                           Lead: <span className="text-slate-900">{isOwner ? "Vous" : getUserName(team.ownerId)}</span>
+                           Lead: <span className="text-slate-900">{isOwner ? "Vous" : getUserName(team.owner_id)}</span>
                          </p>
                       </div>
                     </div>
@@ -236,7 +219,8 @@ const Teams = () => {
                     </div>
 
                     <div className="space-y-4">
-                      {team.members.map(memberId => {
+                      {members.map(member => {
+                        const memberId = member.user_id;
                         const stats = memberStats[memberId] || { total: 0, done: 0 };
                         const progress = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
                         const isSelf = memberId === currentUser.id;
@@ -259,11 +243,9 @@ const Teams = () => {
                                   style={{ width: `${progress}%` }} 
                                 />
                               </div>
-                              <div className="flex justify-between mt-2">
-                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">
-                                  Performance : {stats.done} / {stats.total} tasks
-                                </p>
-                              </div>
+                              <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-2">
+                                Performance : {stats.done} / {stats.total} tasks
+                              </p>
                             </div>
                             {isOwner && !isSelf && (
                               <button 
@@ -289,17 +271,17 @@ const Teams = () => {
                       <Card className="mb-10 p-8 bg-white rounded-[2rem] shadow-2xl border-none ring-1 ring-primary/20 scale-in">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-6">Sélectionnez les dossiers à synchroniser :</p>
                         <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                          {allProjects.map(p => (
+                        {projects.map(p => (
                             <button
                               key={p.id}
                               onClick={() => toggleProjectToTeam(p.id, team.id)}
                               className={cn(
                                 "w-full text-left p-4 rounded-2xl text-sm transition-all flex items-center justify-between border-2",
-                                p.teamId === team.id ? "bg-primary/5 border-primary text-primary font-black" : "bg-slate-50/50 border-transparent hover:bg-slate-50 text-slate-600 font-bold"
+                                p.team_id === team.id ? "bg-primary/5 border-primary text-primary font-black" : "bg-slate-50/50 border-transparent hover:bg-slate-50 text-slate-600 font-bold"
                               )}
                             >
                               <span>{p.name}</span>
-                              {p.teamId === team.id && <CheckCircle2 size={18} />}
+                              {p.team_id === team.id && <CheckCircle2 size={18} />}
                             </button>
                           ))}
                         </div>

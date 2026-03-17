@@ -108,7 +108,7 @@ const ProjectList = ({ projects, title, icon: Icon }) => (
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        const clientUrl = `${window.location.origin}/client?token=${project.shareToken}`;
+                        const clientUrl = `${window.location.origin}/client?token=${project.share_token}`;
                         navigator.clipboard.writeText(clientUrl);
                         alert("Lien client copié !");
                       }}
@@ -132,7 +132,7 @@ const ProjectList = ({ projects, title, icon: Icon }) => (
 
 const Dashboard = () => {
   const { projects } = useProjects();
-  const { currentUser, logout, getUserTeams, getUserNotifications } = useAuth();
+  const { currentUser, logout, teams, notifications } = useAuth();
   const navigate = useNavigate();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -146,11 +146,8 @@ const Dashboard = () => {
 
   if (!currentUser) return null;
 
-  const teams = (currentUser && typeof getUserTeams === 'function') ? getUserTeams() : [];
-  const notifications = typeof getUserNotifications === 'function' ? getUserNotifications() : [];
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const isSolo = teams.length === 0 || (teams.length === 1 && teams[0].members.length <= 1);
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
+  const isSolo = teams.length === 0 || (teams.length === 1 && (teams[0].team_members || []).length <= 1);
 
   const handleLogout = () => {
     logout();

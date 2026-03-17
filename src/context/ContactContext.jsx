@@ -1,53 +1,61 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { supabase } from '../supabaseClient';
 
 const ContactContext = createContext();
 
-export const useContacts = () => {
-  const context = useContext(ContactContext);
-  if (!context) {
-    throw new Error('useContacts must be used within a ContactProvider');
-  }
-  return context;
-};
+export const useContacts = () => useContext(ContactContext);
 
 export const ContactProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  
-  const [contacts, setContacts] = useState(() => {
-    const saved = localStorage.getItem('projboard_contacts');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('projboard_contacts', JSON.stringify(contacts));
-  }, [contacts]);
+    if (currentUser) {
+      fetchContacts();
+    } else {
+      setContacts([]);
+      setLoading(false);
+    }
+  }, [currentUser]);
 
-  const visibleContacts = contacts.filter(c => c.ownerId === currentUser?.id);
+  const fetchContacts = async () => {
+    const { data } = await supabase
+      .from('contacts')
+      .select('*')
+      .order('name');
+    
+    if (data) setContacts(data);
+    setLoading(false);
+  };
 
-  const addContact = (contactData) => {
+  const addContact = async (contactData) => {
     if (!currentUser) return;
-    const newContact = {
-      id: crypto.randomUUID(),
-      ownerId: currentUser.id,
-      ...contactData,
-      createdAt: new Date().toISOString()
-    };
-    setContacts(prev => [newContact, ...prev]);
-    return newContact;
+    const { data } = await supabase
+      .from('contacts')
+      .insert([{ owner_id: currentUser.id, ...contactData }])
+      .select()
+      .single();
+    
+    if (data) fetchContacts();
+    return data;
   };
 
-  const updateContact = (id, updates) => {
-    setContacts(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  const updateContact = async (id, updates) => {
+    await supabase.from('contacts').update(updates).eq('id', id);
+    fetchContacts();
   };
 
-  const deleteContact = (id) => {
-    setContacts(prev => prev.filter(c => c.id !== id));
+  const deleteContact = async (id) => {
+    await supabase.from('contacts').delete().eq('id', id);
+    fetchContacts();
   };
 
   return (
     <ContactContext.Provider value={{
-      contacts: visibleContacts,
+      contacts,
+      loading,
       addContact,
       updateContact,
       deleteContact

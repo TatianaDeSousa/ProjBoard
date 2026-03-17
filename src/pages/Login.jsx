@@ -20,12 +20,11 @@ const Login = () => {
     }
   }, [currentUser, navigate, inviteToken]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      login(email, password);
-      const redirect = inviteToken ? `/join/${inviteToken}` : '/';
-      navigate(redirect);
+      await login(email, password);
+      // Auth change listener in AuthContext will handle navigation
     } catch (err) {
       setError(err.message);
     }
@@ -33,7 +32,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-full -z-10 bg-[#F4F7FF]" />
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
@@ -77,7 +75,7 @@ const Login = () => {
               className="h-14 font-black shadow-inner bg-slate-50/50"
             />
           </div>
-          <Button type="submit" className="w-full h-16 text-xl font-black gradient-primary border-none shadow-xl shadow-primary/25 hover:scale-[1.02] transition-all rounded-[1.25rem] mt-4">
+          <Button type="submit" className="w-full h-16 text-xl font-black gradient-primary border-none shadow-xl shadow-primary/25 rounded-[1.25rem] mt-4">
             Connexion Stratégique
           </Button>
         </form>

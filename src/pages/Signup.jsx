@@ -3,40 +3,64 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card, Input } from '../components/ui';
 import { UserPlus, LogIn, AlertCircle } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, currentUser, externalInvites } = useAuth();
+  const { signup, currentUser } = useAuth();
   const [searchParams] = useSearchParams();
   const teamToken = searchParams.get('invite');
   const inviteToken = searchParams.get('inviteToken');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-
-  useEffect(() => {
-    if (inviteToken) {
-      const invite = externalInvites.find(i => i.token === inviteToken);
-      if (invite) {
-        setEmail(invite.email);
-      }
-    }
-  }, [inviteToken, externalInvites]);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (inviteToken) {
+      fetchInvite();
+    }
+  }, [inviteToken]);
+
+  const fetchInvite = async () => {
+    const { data, error } = await supabase
+      .from('invitations')
+      .select('*')
+      .eq('token', inviteToken)
+      .eq('status', 'pending')
+      .single();
+
+    if (data) {
+      setEmail(data.invited_email);
+    }
+  };
+
+  useEffect(() => {
     if (currentUser) {
+      if (inviteToken) handleAcceptedInvite();
       navigate(teamToken ? `/join/${teamToken}` : '/');
     }
   }, [currentUser, navigate, teamToken]);
 
-  const handleSubmit = (e) => {
+  const handleAcceptedInvite = async () => {
+    const { data: invite } = await supabase
+      .from('invitations')
+      .select('*')
+      .eq('token', inviteToken)
+      .single();
+
+    if (invite) {
+      await supabase.from('team_members').insert([{ team_id: invite.team_id, user_id: currentUser.id }]);
+      await supabase.from('invitations').update({ status: 'accepted' }).eq('id', invite.id);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      signup(email, password, name);
-      const redirect = teamToken ? `/join/${teamToken}` : '/';
-      navigate(redirect);
+      await signup(email, password, name);
+      // Auth change listener in AuthContext will handle navigation
     } catch (err) {
       setError(err.message);
     }
@@ -44,14 +68,13 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-full -z-10 bg-[#F4F7FF]" />
       <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl animate-pulse" />
       <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl animate-pulse" />
       
       <Card className="max-w-md w-full p-12 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border-none rounded-[3rem] bg-white animate-in scale-in">
         <div className="text-center mb-12">
-          <div className="inline-flex p-4 gradient-primary text-white rounded-[1.5rem] mb-6 shadow-xl shadow-primary/30 -rotate-3 transition-transform hover:rotate-0">
+          <div className="inline-flex p-4 gradient-primary text-white rounded-[1.5rem] mb-6 shadow-xl shadow-primary/30 -rotate-3">
             <UserPlus size={40} />
           </div>
           <h1 className="text-4xl font-black tracking-tighter text-slate-900 mb-2">Rejoindre.</h1>
@@ -91,7 +114,8 @@ const Signup = () => {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="h-14 font-black shadow-inner bg-slate-50/50"
+              disabled={!!inviteToken}
+              className="h-14 font-black shadow-inner bg-slate-50/50 disabled:opacity-50"
             />
           </div>
           <div className="space-y-2">
@@ -105,7 +129,7 @@ const Signup = () => {
               className="h-14 font-black shadow-inner bg-slate-50/50"
             />
           </div>
-          <Button type="submit" className="w-full h-16 text-xl font-black gradient-primary border-none shadow-xl shadow-primary/25 hover:scale-[1.02] transition-all rounded-[1.25rem] mt-4">
+          <Button type="submit" className="w-full h-16 text-xl font-black gradient-primary border-none shadow-xl shadow-primary/25 rounded-[1.25rem] mt-4">
             Valider l'Inscription
           </Button>
         </form>
