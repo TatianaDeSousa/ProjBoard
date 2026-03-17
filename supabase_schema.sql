@@ -10,7 +10,7 @@ CREATE TABLE profiles (
 
 -- 2. Teams
 CREATE TABLE teams (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -18,7 +18,7 @@ CREATE TABLE teams (
 
 -- 3. Team Members
 CREATE TABLE team_members (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   team_id UUID REFERENCES teams(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   role TEXT DEFAULT 'member', -- 'owner', 'member'
@@ -28,7 +28,7 @@ CREATE TABLE team_members (
 
 -- 4. Projects
 CREATE TABLE projects (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
   owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
@@ -39,14 +39,14 @@ CREATE TABLE projects (
   deadline DATE,
   health_score INTEGER DEFAULT 100,
   iterations INTEGER DEFAULT 0,
-  share_token UUID DEFAULT crypto.random_uuid(),
+  share_token UUID DEFAULT gen_random_uuid(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 5. Milestones
 CREATE TABLE milestones (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   status TEXT DEFAULT 'todo',
@@ -58,7 +58,7 @@ CREATE TABLE milestones (
 
 -- 6. Logs
 CREATE TABLE project_logs (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
   action TEXT NOT NULL,
   details TEXT,
@@ -67,7 +67,7 @@ CREATE TABLE project_logs (
 
 -- 7. Feedback
 CREATE TABLE project_feedback (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
   value TEXT NOT NULL, -- 'good', 'medium', 'difficult'
   timestamp TIMESTAMPTZ DEFAULT NOW()
@@ -75,10 +75,10 @@ CREATE TABLE project_feedback (
 
 -- 8. Invitations
 CREATE TABLE invitations (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   team_id UUID REFERENCES teams(id) ON DELETE CASCADE NOT NULL,
   invited_email TEXT NOT NULL,
-  token UUID DEFAULT crypto.random_uuid() UNIQUE,
+  token UUID DEFAULT gen_random_uuid() UNIQUE,
   status TEXT DEFAULT 'pending', -- 'pending', 'accepted'
   created_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days')
@@ -86,7 +86,7 @@ CREATE TABLE invitations (
 
 -- 9. Notifications
 CREATE TABLE notifications (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   type TEXT NOT NULL,
   title TEXT,
@@ -157,7 +157,7 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 
 -- 10. Contacts
 CREATE TABLE contacts (
-  id UUID DEFAULT crypto.random_uuid() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   email TEXT,
