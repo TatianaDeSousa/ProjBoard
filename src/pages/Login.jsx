@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card, Input } from '../components/ui';
-import { LogIn, UserPlus, AlertCircle } from 'lucide-react';
+import { LogIn, UserPlus, AlertCircle, Loader2 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -22,11 +23,21 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
       await login(email, password);
-      // Auth change listener in AuthContext will handle navigation
+      // Auth listener in AuthContext handles navigation
     } catch (err) {
-      setError(err.message);
+      console.error('[Login] error:', err.message);
+      if (err.message?.includes('Invalid login credentials')) {
+        setError('Email ou mot de passe incorrect. Si vous venez de créer votre compte, pensez à confirmer votre email en vérifiant votre boîte mail.');
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError('Votre email n\'est pas encore confirmé. Vérifiez votre boîte mail et cliquez sur le lien de confirmation.');
+      } else {
+        setError(err.message || 'Une erreur est survenue. Veuillez réessayer.');
+      }
+      setLoading(false);
     }
   };
 
@@ -75,8 +86,12 @@ const Login = () => {
               className="h-14 font-black shadow-inner bg-slate-50/50"
             />
           </div>
-          <Button type="submit" className="w-full h-16 text-xl font-black gradient-primary border-none shadow-xl shadow-primary/25 rounded-[1.25rem] mt-4">
-            Connexion Stratégique
+          <Button 
+            type="submit" 
+            disabled={loading}
+            className="w-full h-16 text-xl font-black gradient-primary border-none shadow-xl shadow-primary/25 rounded-[1.25rem] mt-4 disabled:opacity-70 flex items-center justify-center gap-3"
+          >
+            {loading ? <><Loader2 size={24} className="animate-spin" /> Connexion…</> : 'Connexion Stratégique'}
           </Button>
         </form>
 
