@@ -43,17 +43,39 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (user) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    console.log('[AuthContext] fetchProfile called for user:', user.id);
+    
+    // Retry up to 3 times — trigger can be slower than the auth event
+    let data = null;
+    for (let i = 0; i < 3; i++) {
+      if (i > 0) await new Promise(r => setTimeout(r, 800)); // wait 800ms between retries
+      const res = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      data = res.data;
+      if (data) break;
+      console.warn(`[AuthContext] Profile not found yet, retry ${i + 1}/3`);
+    }
 
     if (data) {
+      console.log('[AuthContext] Profile loaded:', data.name);
       setCurrentUser(data);
-      fetchTeams(user.id);
-      fetchNotifications(user.id);
+    } else {
+      // Fallback: build a profile from auth metadata so the app still works
+      console.warn('[AuthContext] Profile still missing after retries — using auth metadata fallback');
+      const fallback = {
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'Utilisateur',
+        avatar_initials: (user.user_metadata?.name || 'U').charAt(0).toUpperCase()
+      };
+      setCurrentUser(fallback);
     }
+
+    fetchTeams(user.id);
+    fetchNotifications(user.id);
     setLoading(false);
   };
 
