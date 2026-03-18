@@ -1,46 +1,54 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, isValid } from 'date-fns';
 
 const ProjectContext = createContext();
 
 export const useProjects = () => useContext(ProjectContext);
 
-// FONCTION DE CALCUL DU SCORE DE SANTÉ (v2.7)
+// CALCULATE HEALTH SCORE - SÉCURISÉ v2.9.3
 export const calculateHealthScore = (project) => {
-  let pointsDeadline = 0;
+  if (!project) return 0;
+  let pointsDeadline = 50; 
   let pointsUpdate = 0;
   let pointsFeedback = 0;
 
-  // 1. Points Deadline (0.5)
+  // 1. Deadline (0.5)
   if (project.deadline) {
-    const daysLeft = differenceInDays(new Date(project.deadline), new Date());
-    if (daysLeft > 7) pointsDeadline = 50;
-    else if (daysLeft >= 3) pointsDeadline = 30;
-    else if (daysLeft >= 0) pointsDeadline = 10;
-    else pointsDeadline = 0; // Dépassée
-  } else {
-    pointsDeadline = 50; // Pas de deadline = pas de stress par défaut
+    const d = new Date(project.deadline);
+    if (isValid(d)) {
+      const daysLeft = differenceInDays(d, new Date());
+      if (daysLeft > 7) pointsDeadline = 50;
+      else if (daysLeft >= 3) pointsDeadline = 30;
+      else if (daysLeft >= 0) pointsDeadline = 10;
+      else pointsDeadline = 0;
+    }
   }
 
-  // 2. Points Mise à jour (0.3)
-  const lastUpdate = project.updatedAt || new Date().toISOString();
-  const daysSinceUpdate = differenceInDays(new Date(), new Date(lastUpdate));
-  if (daysSinceUpdate < 2) pointsUpdate = 30;
-  else if (daysSinceUpdate < 5) pointsUpdate = 15;
-  else pointsUpdate = 0;
+  // 2. Mise à jour (0.3)
+  const lastUpdate = project.updatedAt ? new Date(project.updatedAt) : new Date();
+  if (isValid(lastUpdate)) {
+    const daysSinceUpdate = differenceInDays(new Date(), lastUpdate);
+    if (daysSinceUpdate < 2) pointsUpdate = 30;
+    else if (daysSinceUpdate < 5) pointsUpdate = 15;
+    else pointsUpdate = 0;
+  }
 
-  // 3. Points Retours Clients (0.2)
+  // 3. Retours (0.2)
   const loops = project.feedbackLoops || 0;
   if (loops <= 1) pointsFeedback = 20;
   else if (loops <= 3) pointsFeedback = 10;
   else pointsFeedback = 0;
 
-  return Math.round((pointsDeadline * 0.5) + (pointsUpdate * 0.3) + (pointsFeedback * 0.2)) || 0;
+  return Math.max(0, Math.min(100, Math.round((pointsDeadline * 0.5) + (pointsUpdate * 0.3) + (pointsFeedback * 0.2))));
 };
 
 export const ProjectProvider = ({ children }) => {
-  const [projects, setProjects] = useState(() => JSON.parse(localStorage.getItem('pb_projects')) || []);
+  const [projects, setProjects] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('pb_projects')) || [];
+    } catch (e) { return []; }
+  });
 
   useEffect(() => {
     localStorage.setItem('pb_projects', JSON.stringify(projects));
@@ -54,7 +62,7 @@ export const ProjectProvider = ({ children }) => {
       description: projectData.description || '',
       status: 'on_track',
       progress: 0,
-      feedbackLoops: 0, // Nouveau champ v2.7
+      feedbackLoops: 0,
       healthScore: 100,
       deadline: projectData.deadline || null,
       folderId: projectData.folderId || null,
@@ -70,12 +78,8 @@ export const ProjectProvider = ({ children }) => {
   const updateProject = (projectId, updates) => {
     setProjects(projects.map(p => {
       if (p.id === projectId) {
-        const updated = { 
-          ...p, 
-          ...updates, 
-          updatedAt: new Date().toISOString() 
-        };
-        updated.healthScore = calculateHealthScore(updated); // Recalcul auto
+        const updated = { ...p, ...updates, updatedAt: new Date().toISOString() };
+        updated.healthScore = calculateHealthScore(updated);
         return updated;
       }
       return p;
@@ -104,13 +108,8 @@ export const ProjectProvider = ({ children }) => {
   const updateMilestone = (projectId, milestoneId, updates) => {
     setProjects(projects.map(p => {
       if (p.id === projectId) {
-        const milestone = (p.milestones || []).find(m => m.id === milestoneId);
         const newMs = (p.milestones || []).map(m => m.id === milestoneId ? { ...m, ...updates } : m);
-        const updated = { 
-          ...p, 
-          milestones: newMs, 
-          updatedAt: new Date().toISOString()
-        };
+        const updated = { ...p, milestones: newMs, updatedAt: new Date().toISOString() };
         updated.healthScore = calculateHealthScore(updated);
         return updated;
       }
