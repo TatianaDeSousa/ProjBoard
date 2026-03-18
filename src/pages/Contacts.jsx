@@ -15,9 +15,6 @@ const Contacts = () => {
   const [newPhone, setNewPhone] = useState('');
   const [newAddress, setNewAddress] = useState('');
 
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
   const filteredContacts = contacts.filter(c => 
     (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
     (c.company || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -25,31 +22,21 @@ const Contacts = () => {
     (c.address || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setSaving(true);
-    setError('');
-    try {
-      console.log('[Contacts] addContact called:', newName, newEmail);
-      await addContact({
-        name: newName,
-        company: newCompany,
-        email: newEmail,
-        phone: newPhone,
-        address: newAddress
-      });
-      setNewName('');
-      setNewCompany('');
-      setNewEmail('');
-      setNewPhone('');
-      setNewAddress('');
-      setIsAdding(false);
-      console.log('[Contacts] contact saved successfully');
-    } catch (err) {
-      console.error('[Contacts] addContact error:', err);
-      setError(err.message || 'Erreur lors de la sauvegarde.');
-    }
-    setSaving(false);
+    addContact({
+      name: newName,
+      company: newCompany,
+      email: newEmail,
+      phone: newPhone,
+      address: newAddress
+    });
+    setNewName('');
+    setNewCompany('');
+    setNewEmail('');
+    setNewPhone('');
+    setNewAddress('');
+    setIsAdding(false);
   };
 
   return (

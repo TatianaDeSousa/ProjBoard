@@ -1,65 +1,32 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
-import { supabase } from '../supabaseClient';
 
 const ContactContext = createContext();
 
 export const useContacts = () => useContext(ContactContext);
 
 export const ContactProvider = ({ children }) => {
-  const { currentUser } = useAuth();
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [contacts, setContacts] = useState(() => JSON.parse(localStorage.getItem('pb_contacts')) || []);
 
   useEffect(() => {
-    if (currentUser) {
-      fetchContacts();
-    } else {
-      setContacts([]);
-      setLoading(false);
-    }
-  }, [currentUser]);
+    localStorage.setItem('pb_contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-  const fetchContacts = async () => {
-    const { data } = await supabase
-      .from('contacts')
-      .select('*')
-      .order('name');
-    
-    if (data) setContacts(data);
-    setLoading(false);
+  const addContact = (contact) => {
+    const newContact = { id: crypto.randomUUID(), ...contact };
+    setContacts([newContact, ...contacts]);
+    return newContact;
   };
 
-  const addContact = async (contactData) => {
-    if (!currentUser) return;
-    const { data } = await supabase
-      .from('contacts')
-      .insert([{ owner_id: currentUser.id, ...contactData }])
-      .select()
-      .single();
-    
-    if (data) fetchContacts();
-    return data;
+  const deleteContact = (contactId) => {
+    setContacts(contacts.filter(c => c.id !== contactId));
   };
 
-  const updateContact = async (id, updates) => {
-    await supabase.from('contacts').update(updates).eq('id', id);
-    fetchContacts();
-  };
-
-  const deleteContact = async (id) => {
-    await supabase.from('contacts').delete().eq('id', id);
-    fetchContacts();
+  const updateContact = (contactId, updates) => {
+    setContacts(contacts.map(c => c.id === contactId ? { ...c, ...updates } : c));
   };
 
   return (
-    <ContactContext.Provider value={{
-      contacts,
-      loading,
-      addContact,
-      updateContact,
-      deleteContact
-    }}>
+    <ContactContext.Provider value={{ contacts, addContact, deleteContact, updateContact }}>
       {children}
     </ContactContext.Provider>
   );
