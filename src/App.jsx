@@ -1,48 +1,59 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
-import { AuthProvider } from './context/AuthContext';
 import { ContactProvider } from './context/ContactContext';
+
+// Pages
 import Dashboard from './pages/Dashboard';
-import ProjectDetail from './pages/ProjectDetail';
-import ShareView from './pages/ShareView';
-import NewProject from './pages/NewProject';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import JoinTeam from './pages/JoinTeam';
-import Teams from './pages/Teams';
+import ProjectDetail from './pages/ProjectDetail';
+import NewProject from './pages/NewProject';
 import Contacts from './pages/Contacts';
-import TeamWorkload from './pages/TeamWorkload';
-import Notifications from './pages/Notifications';
+import Folders from './pages/Folders'; // OK
+import ShareView from './pages/ShareView';
 import AuthCallback from './pages/AuthCallback';
-import './App.css';
+
+const PrivateRoute = ({ children }) => {
+  const { currentUser, loading } = useAuth();
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center font-black animate-pulse">
+      <div className="w-12 h-12 gradient-primary rounded-2xl shadow-xl rotate-45" />
+    </div>
+  );
+  return currentUser ? children : <Navigate to="/login" />;
+};
 
 function App() {
   return (
     <AuthProvider>
-      <ContactProvider>
-        <ProjectProvider>
+      <ProjectProvider>
+        <ContactProvider>
           <Router>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/join/:token" element={<JoinTeam />} />
-              <Route path="/teams" element={<Teams />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/project/new" element={<NewProject />} />
-              <Route path="/project/:id" element={<ProjectDetail />} />
-              <Route path="/share/:shareToken" element={<ShareView />} />
-              <Route path="/client" element={<ShareView />} />
-              <Route path="/team-workload" element={<TeamWorkload />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-            </Routes>
-          </div>
-        </Router>
+            <div className="min-h-screen bg-[#F8FAFC]">
+              <Routes>
+                {/* Public */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/client" element={<ShareView />} />
+                <Route path="/client/:shareToken" element={<ShareView />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+
+                {/* Dashboard / Protected */}
+                <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                <Route path="/project/new" element={<PrivateRoute><NewProject /></PrivateRoute>} />
+                <Route path="/project/:id" element={<PrivateRoute><ProjectDetail /></PrivateRoute>} />
+                <Route path="/contacts" element={<PrivateRoute><Contacts /></PrivateRoute>} />
+                <Route path="/folders" element={<PrivateRoute><Folders /></PrivateRoute>} />
+
+                {/* Redirect */}
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </div>
+          </Router>
+        </ContactProvider>
       </ProjectProvider>
-      </ContactProvider>
     </AuthProvider>
   );
 }

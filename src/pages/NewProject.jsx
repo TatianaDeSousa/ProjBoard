@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, Button, Input, Badge, cn } from '../components/ui';
-import { Plus, Target, Calendar, User, ChevronLeft, Send, Sparkles, AlertCircle } from 'lucide-react';
+import { Card, Button, Input, cn } from '../components/ui';
+import { Plus, Target, Calendar, User, ChevronLeft, Briefcase, Sparkles, AlertCircle, Folder } from 'lucide-react';
 
 const NewProject = () => {
   const { createProject } = useProjects();
-  const { teams } = useAuth();
+  const { folders } = useAuth();
   const navigate = useNavigate();
   
   const [name, setName] = useState('');
   const [client, setClient] = useState('');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
-  const [teamId, setTeamId] = useState('');
+  const [folderId, setFolderId] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e) => {
@@ -27,7 +27,7 @@ const NewProject = () => {
         client,
         deadline: deadline ? new Date(deadline).toISOString() : null,
         description,
-        teamId: teamId || null
+        folderId: folderId || null
       });
       navigate(`/project/${project.id}`);
     } catch (err) {
@@ -58,11 +58,11 @@ const NewProject = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-3">
                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom du projet</label>
-               <Input placeholder="ex: Refonte Site Web 2024" value={name} onChange={e => setName(e.target.value)} required className="h-14 font-black" />
+               <Input placeholder="ex: Site E-commerce v2" value={name} onChange={e => setName(e.target.value)} required className="h-14 font-black" />
             </div>
             <div className="space-y-3">
                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom du Client</label>
-               <Input placeholder="ex: Agence Dupont" value={client} onChange={e => setClient(e.target.value)} className="h-14 font-black" />
+               <Input placeholder="ex: DUPOND" value={client} onChange={e => setClient(e.target.value)} className="h-14 font-black" />
             </div>
           </div>
 
@@ -72,31 +72,31 @@ const NewProject = () => {
                <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="h-14 font-black" />
             </div>
             <div className="space-y-3">
-               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Assigner à un Groupe (Optionnel)</label>
+               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Classer dans un Dossier (Optionnel)</label>
                <select 
                  className="w-full h-14 bg-slate-50 rounded-xl border-none px-4 font-black shadow-inner"
-                 value={teamId}
-                 onChange={e => setTeamId(e.target.value)}
+                 value={folderId}
+                 onChange={e => setFolderId(e.target.value)}
                >
-                  <option value="">Projet Personnel</option>
-                  {teams.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                  <option value="">Projet en vrac</option>
+                  {folders.map(f => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
                </select>
             </div>
           </div>
 
-          <div className="space-y-3">
-             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Notes Stratégiques / Brief court</label>
+          <div className="space-y-3 pt-6 border-t border-slate-50">
+             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 italic"><Sparkles size={12} className="inline mr-1" /> Notes Stratégiques</label>
              <textarea 
                value={description} onChange={e => setDescription(e.target.value)}
-               placeholder="Points clés du projet, objectifs principaux…"
-               className="w-full h-32 bg-slate-50 rounded-2xl border-none p-6 font-medium shadow-inner"
+               placeholder="Points clés du projet, objectifs essentiels…"
+               className="w-full h-32 bg-slate-50 rounded-2xl border-none p-6 font-bold text-slate-600 shadow-inner focus:ring-1 focus:ring-primary/20 transition-all"
              />
           </div>
 
           <div className="flex justify-end pt-10">
-             <Button type="submit" className="h-16 px-16 font-black gradient-primary border-none shadow-xl shadow-primary/20 rounded-[1.25rem] text-xl gap-4"><Plus size={24} /> Créer le Dossier</Button>
+             <Button type="submit" className="h-16 px-16 font-black gradient-primary border-none shadow-xl shadow-primary/20 rounded-2xl text-xl gap-4 flex items-center"><Plus size={24} /> Créer le Dossier</Button>
           </div>
         </form>
       </Card>
