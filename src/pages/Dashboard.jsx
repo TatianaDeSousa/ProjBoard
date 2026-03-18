@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, Input, cn } from '../components/ui';
 import AIAttackPlan from '../components/AIAttackPlan';
 import VisualCalendar from '../components/VisualCalendar';
-import { Plus, Search, Calendar, ChevronRight, AlertCircle, Folder, LogOut, User, Contact, Activity, Briefcase, RefreshCcw, LayoutGrid, StickyNote, CheckCircle2, HeartPulse, Zap } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronRight, AlertCircle, Folder, LogOut, User, Contact, Activity, Briefcase, RefreshCcw, LayoutGrid, StickyNote, CheckCircle2, HeartPulse, Zap, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -41,11 +41,9 @@ const QuickNotes = () => {
 const ProjectList = ({ projects, title, icon: Icon, onShare }) => (
   <div className="space-y-8 mb-16 animate-in">
     <div className="flex items-center gap-4 px-2">
-      <div className="p-3 bg-slate-900 text-white rounded-2xl shadow-xl">
-        <Icon size={24} />
-      </div>
+      <div className="p-3 bg-slate-900 text-white rounded-2xl shadow-xl"><Icon size={24} /></div>
       <h2 className="text-3xl font-black tracking-tighter text-slate-900">{title}</h2>
-      <div className="h-px flex-1 bg-slate-100 ml-4" />
+      <div className="h-px flex-1 bg-slate-100 ml-4 opacity-50" />
       <Badge className="bg-slate-100 text-slate-400 border-none font-black text-sm px-4 py-1 rounded-full">{projects.length}</Badge>
     </div>
     
@@ -63,39 +61,33 @@ const ProjectList = ({ projects, title, icon: Icon, onShare }) => (
         return (
           <Link key={project.id} to={`/project/${project.id}`} className="group h-full transition-all duration-500 hover:-translate-y-2">
             <Card className="p-10 hover:shadow-[0_40px_60px_-15px_rgba(99,102,241,0.15)] transition-all border-none h-full flex flex-col justify-between bg-white rounded-[3.5rem] ring-1 ring-black/5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/20 transition-colors" />
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-8">
                   <div className="flex-1 min-w-0 pr-4">
                     <div className="flex items-center gap-3 mb-4">
                        <div className={cn("w-3 h-3 rounded-full animate-pulse", project.status === 'delayed' ? "bg-red-500 shadow-lg" : "bg-emerald-500 shadow-lg")} />
-                       <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest px-3 border-slate-100 text-slate-400">
-                          {project.status === 'delayed' ? 'Retard' : 'En Cours'}
+                       <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest px-3 border-slate-100 text-slate-400 font-black">
+                          {project.status === 'delayed' ? 'Retard' : 'Actif'}
                        </Badge>
                     </div>
                     <h3 className="font-black text-3xl leading-none text-slate-900 group-hover:text-primary transition-colors truncate tracking-tighter mb-2">{project.name}</h3>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest italic">{project.client}</p>
                   </div>
-                  <div className={cn("w-16 h-16 rounded-3xl flex flex-col items-center justify-center shadow-lg", finalHealth >= 80 ? "bg-emerald-50 text-emerald-600 shadow-emerald-500/10" : finalHealth >= 50 ? "bg-amber-50 text-amber-600 shadow-amber-500/10" : "bg-red-50 text-red-600 shadow-red-500/20")}>
+                  <div className={cn("w-16 h-16 rounded-3xl flex flex-col items-center justify-center shadow-lg transition-transform group-hover:scale-110", finalHealth >= 80 ? "bg-emerald-50 text-emerald-600 shadow-emerald-500/10" : finalHealth >= 50 ? "bg-amber-50 text-amber-600 shadow-amber-500/10" : "bg-red-50 text-red-600 shadow-red-500/20")}>
                      <HeartPulse size={16} className="mb-0.5" />
                      <span className="text-xl font-black">{finalHealth}</span>
                   </div>
                 </div>
                 <div className="space-y-4 mb-10">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Avancement</span>
-                    <span className="text-xl font-black text-slate-900">{realProgress}%</span>
-                  </div>
-                  <div className="h-3 w-full bg-slate-50 rounded-full p-0.5 ring-1 ring-slate-100 overflow-hidden shadow-inner">
+                  <div className="flex justify-between items-end"><span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Avancement</span><span className="text-xl font-black text-slate-900">{realProgress}%</span></div>
+                  <div className="h-3 w-full bg-slate-50 rounded-full p-0.5 ring-1 ring-slate-100 overflow-hidden shadow-inner flex">
                     <div className="h-full rounded-full gradient-primary shadow-lg shadow-primary/20 transition-all duration-[1500ms]" style={{ width: `${realProgress}%` }} />
                   </div>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-8 mt-4 border-t border-slate-50 relative z-10">
-                <div className="flex items-center gap-2 text-slate-400 group-hover:text-primary transition-colors">
-                  <Calendar size={16} /><span className="text-[11px] font-black uppercase tracking-widest">{deadlineStr}</span>
-                </div>
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onShare(project.id); }} className="flex items-center gap-2 text-[11px] font-black uppercase bg-primary text-white px-6 py-2.5 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"><Zap size={14} /> Partager</button>
+                <div className="flex items-center gap-2 text-slate-400 group-hover:text-primary transition-colors"><Calendar size={16} /><span className="text-[11px] font-black uppercase tracking-widest">{deadlineStr}</span></div>
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onShare(project.id); }} className="flex items-center gap-2 text-[11px] font-black uppercase bg-primary text-white px-6 py-2.5 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all outline-none"><Zap size={14} /> Partager</button>
               </div>
             </Card>
           </Link>
@@ -118,42 +110,56 @@ const Dashboard = () => {
       const token = await getShareLink(id);
       const url = `${window.location.origin}/client?token=${token}`;
       await navigator.clipboard.writeText(url);
-      alert("🚀 Lien Client synchronisé !");
-    } catch (e) { alert("🚨 Erreur synchronisation."); }
+      alert("🚀 Lien Client prêt et copié !");
+    } catch (e) { 
+      alert(e.message || "🚨 Erreur de synchronisation."); 
+    }
   };
 
   const filteredProjects = projects.filter(p => (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (p.client || '').toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="container mx-auto px-6 py-12 animate-in max-w-7xl pb-40">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-20 gap-8 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-20 gap-10 px-4">
         <div>
-           <h1 className="text-6xl font-black tracking-tighter text-slate-900 mb-2">Portfolio <span className="text-primary opacity-20">v2.2</span></h1>
-           <p className="text-xl text-slate-400 font-black italic tracking-tight italic uppercase tracking-widest text-xs mt-2">Consultant Stratégique • {currentUser.name}</p>
+           {/* TITRE APPLI REVALORISÉ */}
+           <div className="flex items-center gap-4 mb-2">
+              <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center text-white shadow-2xl relative rotate-3"><Zap size={32} /></div>
+              <h1 className="text-6xl font-black tracking-tighter text-slate-900">ProjBoard <span className="text-primary text-2xl font-black italic tracking-widest opacity-20">2026</span></h1>
+           </div>
+           {/* SLOGAN QUI CLAQUE */}
+           <p className="text-xl text-slate-400 font-extrabold italic flex items-center gap-2 animate-in" style={{ animationDelay: '200ms' }}>
+             <Sparkles size={20} className="text-amber-400" /> 
+             Pour que vos projets soient menés à bien
+           </p>
+           {/* BIENVENUE PERSONALISÉ */}
+           <p className="text-xs font-black uppercase tracking-[0.4em] text-primary mt-6 ml-1">Bienvenue {currentUser.name}</p>
         </div>
         
-        <div className="flex flex-wrap gap-4 items-center">
-          {/* AGRANDISSEMENT DES BOUTONS DE NAVIGATION */}
-          <Link to="/contacts" title="Gérer mes Contacts">
-             <Button variant="outline" className="h-20 w-20 rounded-[1.5rem] border-slate-100 shadow-2xl hover:border-primary hover:bg-primary/5 transition-all hover:scale-110 flex flex-col items-center justify-center gap-1 group">
-                <Contact size={32} className="text-slate-400 group-hover:text-primary transition-colors" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-300 group-hover:text-primary">Contacts</span>
+        <div className="flex flex-wrap gap-6 items-center">
+          <Link to="/contacts" title="Mes Contacts VIP">
+             <Button variant="outline" className="h-24 w-24 rounded-[2rem] border-slate-100 shadow-premium hover:border-primary hover:bg-primary/5 transition-all hover:scale-110 flex flex-col items-center justify-center gap-2 group border-none bg-white">
+                <Contact size={36} className="text-slate-400 group-hover:text-primary transition-colors" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 group-hover:text-primary mt-1">Contacts</span>
              </Button>
           </Link>
-          <Link to="/folders" title="Gérer mes Dossiers">
-             <Button variant="outline" className="h-20 w-20 rounded-[1.5rem] border-slate-100 shadow-2xl hover:border-primary hover:bg-primary/5 transition-all hover:scale-110 flex flex-col items-center justify-center gap-1 group">
-                <Folder size={32} className="text-slate-400 group-hover:text-primary transition-colors" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-300 group-hover:text-primary">Dossiers</span>
+          <Link to="/folders" title="Mes Dossiers Pro">
+             <Button variant="outline" className="h-24 w-24 rounded-[2rem] border-slate-100 shadow-premium hover:border-primary hover:bg-primary/5 transition-all hover:scale-110 flex flex-col items-center justify-center gap-2 group border-none bg-white">
+                <Folder size={36} className="text-slate-400 group-hover:text-primary transition-colors" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 group-hover:text-primary mt-1">Dossiers</span>
              </Button>
           </Link>
           
           <Link to="/project/new">
-             <Button className="h-20 px-10 font-black gradient-primary border-none shadow-premium text-white rounded-[1.5rem] hover:scale-105 transition-all active:scale-95 gap-4 shadow-primary/30 text-xl">
-                <Plus size={32} /> Nouveau Dossier
+             <Button className="h-24 px-12 font-black gradient-primary border-none shadow-[0_25px_50px_-12px_rgba(99,102,241,0.4)] text-white rounded-[2rem] hover:scale-105 transition-all active:scale-95 gap-4 text-2xl group relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Plus size={36} className="group-hover:rotate-180 transition-transform duration-500" /> 
+                {/* RENOMMÉ EN NOUVEAU PROJET */}
+                <span>Nouveau Projet</span>
              </Button>
           </Link>
           
-          <Button variant="ghost" onClick={() => { if(confirm('Se déconnecter ?')) { logout(); navigate('/login'); } }} className="h-20 w-20 text-slate-200 hover:text-red-500 rounded-[1.5rem] transition-all hover:bg-red-50">
+          <Button variant="ghost" onClick={() => { if(confirm('Se déconnecter ?')) { logout(); navigate('/login'); } }} className="h-24 w-12 text-slate-200 hover:text-red-500 transition-all">
              <LogOut size={28} />
           </Button>
         </div>
@@ -161,27 +167,11 @@ const Dashboard = () => {
 
       <div className="px-4 space-y-24">
          <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
-            <div className="xl:col-span-8 flex flex-col">
-               <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-300 mb-8 flex items-center gap-3 italic"><Calendar size={16} /> Chronométrage de Missions</h3>
-               <VisualCalendar projects={projects} />
-            </div>
-            <div className="xl:col-span-4 flex flex-col">
-               <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-300 mb-8 flex items-center gap-3 italic"><StickyNote size={16} /> Bloc-Notes Tactique</h3>
-               <QuickNotes />
-            </div>
+            <div className="xl:col-span-8 flex flex-col"><h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-300 mb-8 flex items-center gap-3"><Calendar size={18} /> Flux Temporel</h3><VisualCalendar projects={projects} /></div>
+            <div className="xl:col-span-4 flex flex-col"><h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-300 mb-8 flex items-center gap-3"><StickyNote size={18} /> Bloc-Notes Tactique</h3><QuickNotes /></div>
          </div>
-
-         <div className="relative">
-            <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-300" size={24} />
-            <Input 
-              placeholder="Rechercher une mission, une marque, un client..." 
-              className="pl-20 h-20 text-xl bg-white shadow-2xl border-none rounded-[2.5rem] ring-1 ring-black/5 font-black placeholder:text-slate-200" 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-            />
-         </div>
-
-         <ProjectList projects={filteredProjects} title="Dossiers Clientèles" icon={LayoutGrid} onShare={handleShare} />
+         <div className="relative"><Search className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-300" size={24} /><Input placeholder="Chercher une mission, une marque, un client..." className="pl-20 h-24 text-2xl bg-white shadow-2xl border-none rounded-[3rem] ring-1 ring-black/5 font-black placeholder:text-slate-200" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+         <ProjectList projects={filteredProjects} title="Base de Données Projets" icon={Activity} onShare={handleShare} />
       </div>
     </div>
   );

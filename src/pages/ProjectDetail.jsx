@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProjects } from '../context/ProjectContext';
-import { useAuth } from '../context/AuthContext';
 import { Button, Card, Badge, Input, cn } from '../components/ui';
 import { 
   ChevronLeft, Calendar, Clock, CheckCircle2, 
-  Plus, Activity, Trash2, Share2, RefreshCcw, StickyNote, AlertCircle
+  Plus, Activity, Trash2, Share2, RefreshCcw, StickyNote, AlertCircle, Circle, ArrowUpRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -24,9 +23,11 @@ const ProjectDetail = () => {
   
   const [newMilestoneName, setNewMilestoneName] = useState('');
   const [newMilestoneDate, setNewMilestoneDate] = useState('');
-  const [copyStatus, setCopyStatus] = useState('idle'); // idle, loading, success
+  
+  const [shareLink, setShareLink] = useState(''); // Pour l'affichage direct du lien
+  const [syncBusy, setSyncBusy] = useState(false);
 
-  // Auto-save notes
+  // Auto-save notes logic
   useEffect(() => {
     if (project && notes !== project.description) {
       const timeout = setTimeout(() => {
@@ -39,25 +40,28 @@ const ProjectDetail = () => {
   if (!project) return <div className="p-20 text-center font-black text-slate-400">Dossier introuvable...</div>;
 
   const handleSaveProject = () => {
-    updateProject(id, {
-      name: editedName,
-      client: editedClient,
-      deadline: editedDeadline ? new Date(editedDeadline).toISOString() : project.deadline
-    });
+    updateProject(id, { name: editedName, client: editedClient, deadline: editedDeadline ? new Date(editedDeadline).toISOString() : project.deadline });
     setIsEditing(false);
   };
 
-  const syncAndCopyLink = async () => {
-    setCopyStatus('loading');
+  const handleSyncShare = async () => {
+    setSyncBusy(true);
     try {
       const token = await getShareLink(id);
-      const shareUrl = `${window.location.origin}/client?token=${token}`;
-      await navigator.clipboard.writeText(shareUrl);
-      setCopyStatus('success');
-      setTimeout(() => setCopyStatus('idle'), 2000);
-    } catch (err) {
-      setCopyStatus('idle');
-    }
+      const url = `${window.location.origin}/client?token=${token}`;
+      setShareLink(url);
+      await navigator.clipboard.writeText(url);
+    } catch (err) { alert(err.message); }
+    setSyncBusy(false);
+  };
+
+  // CYCLE DE STATUT : TODO -> DOING -> DONE
+  const cycleMilestone = (mId, currentStatus) => {
+    let newStatus = 'todo';
+    if (currentStatus === 'todo') newStatus = 'doing';
+    else if (currentStatus === 'doing') newStatus = 'done';
+    else newStatus = 'todo';
+    updateMilestone(id, mId, { status: newStatus });
   };
 
   const milestones = project.milestones || [];
@@ -65,146 +69,178 @@ const ProjectDetail = () => {
   const progress = milestones.length > 0 ? Math.round((completedCount / milestones.length) * 100) : 0;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl animate-in pb-40">
+    <div className="container mx-auto px-6 py-10 max-w-7xl animate-in pb-40">
       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-10 group w-fit">
-        <Link to="/" className="flex items-center gap-2 group-hover:text-primary transition-colors">
-          <div className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:shadow-md transition-all"><ChevronLeft size={14} /></div>
+        <Link to="/" className="flex items-center gap-2 group-hover:text-primary transition-all">
+          <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:shadow-md"><ChevronLeft size={16} /></div>
           Dashboard
         </Link>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* COLONNE GAUCHE (PROJET) */}
-        <div className="flex-1 space-y-8 w-full">
-           <Card className="p-10 border-none shadow-2xl bg-white rounded-[3rem] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-primary/10 transition-colors" />
+      <div className="flex flex-col lg:flex-row gap-12 items-start">
+        {/* COLONNE GAUCHE — INFOS & JALONS */}
+        <div className="flex-1 space-y-10 w-full">
+           <Card className="p-12 border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.05)] bg-white rounded-[3.5rem] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-80 h-80 gradient-primary opacity-5 rounded-full blur-3xl -mr-40 -mt-40" />
               
-              <div className="flex justify-between items-start mb-10 relative z-10">
+              <div className="flex flex-col md:flex-row justify-between items-start mb-12 relative z-10 gap-8">
                 {isEditing ? (
-                  <div className="space-y-4 w-full max-w-md">
-                    <Input value={editedName} onChange={e => setEditedName(e.target.value)} className="text-3xl font-black h-16 shadow-inner" />
-                    <Input value={editedClient} onChange={e => setEditedClient(e.target.value)} className="font-bold text-slate-500 shadow-inner" />
-                    <Input type="date" value={editedDeadline} onChange={e => setEditedDeadline(e.target.value)} className="h-12 shadow-inner" />
-                    <div className="flex gap-2">
-                       <Button onClick={handleSaveProject} className="gradient-primary border-none font-black shadow-lg rounded-xl">Sauvegarder</Button>
-                       <Button variant="ghost" onClick={() => setIsEditing(false)} className="font-bold">Annuler</Button>
+                  <div className="space-y-4 w-full max-w-lg">
+                    <Input value={editedName} onChange={e => setEditedName(e.target.value)} className="text-4xl font-black h-20 shadow-inner rounded-[1.5rem]" />
+                    <Input value={editedClient} onChange={e => setEditedClient(e.target.value)} className="font-bold text-slate-500 shadow-inner rounded-xl" />
+                    <div className="flex gap-4">
+                       <Button onClick={handleSaveProject} className="gradient-primary border-none font-black shadow-lg rounded-2xl h-14 px-8 text-white">Sauvegarder</Button>
+                       <Button variant="ghost" onClick={() => setIsEditing(false)} className="font-black h-14">Annuler</Button>
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <div className="flex items-center gap-3 mb-4">
-                       <Badge className="bg-primary text-white border-none font-black text-[9px] uppercase tracking-widest h-6 px-3 shadow-lg shadow-primary/20">Dossier Actif</Badge>
-                       {project.folderId && <Badge className="bg-slate-100 text-slate-400 border-none font-black text-[9px] uppercase tracking-widest h-6 px-3">Classé</Badge>}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-6">
+                       <Badge className="bg-primary/10 text-primary border-none font-black text-xs uppercase tracking-widest h-8 px-4 rounded-full">Mission Prioritaire</Badge>
+                       <Badge className="bg-slate-50 text-slate-300 border-none font-black text-[10px] uppercase h-8 px-4 rounded-full italic">ProjBoard Cloud ✅</Badge>
                     </div>
-                    <h1 className="text-5xl font-black tracking-tighter text-slate-900 mb-2">{project.name}</h1>
-                    <p className="text-xl text-slate-400 font-black italic tracking-tight">{project.client}</p>
+                    <h1 className="text-6xl font-black tracking-tighter text-slate-900 mb-4 leading-none">{project.name}</h1>
+                    <p className="text-2xl text-slate-400 font-extrabold italic tracking-tight">{project.client}</p>
                   </div>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-4 min-w-[280px]">
                    <Button 
-                     onClick={syncAndCopyLink}
-                     disabled={copyStatus === 'loading'}
-                     className={cn(
-                       "h-14 px-8 font-black rounded-2xl transition-transform hover:scale-105 active:scale-95 shadow-2xl flex gap-3 border-none",
-                       copyStatus === 'success' ? "bg-emerald-500 text-white" : "gradient-primary text-white"
-                     )}
+                     onClick={handleSyncShare}
+                     disabled={syncBusy}
+                     className="h-16 px-10 font-black gradient-primary border-none text-white rounded-[1.5rem] shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] hover:scale-105 active:scale-95 transition-all flex gap-3 text-lg"
                    >
-                      {copyStatus === 'loading' ? <RefreshCcw size={22} className="animate-spin" /> : 
-                       copyStatus === 'success' ? <><CheckCircle2 size={22} /> Lien Copié</> : 
-                       <><Share2 size={22} /> Partager au Client</>}
+                      {syncBusy ? <RefreshCcw size={24} className="animate-spin" /> : <><Share2 size={24} /> Partager au Client</>}
                    </Button>
-                   <Button variant="outline" size="icon" className="h-14 w-14 rounded-2xl border-slate-100 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm" onClick={() => { if(confirm('Supprimer définitivement ce dossier ?')) { deleteProject(id); navigate('/'); } }}><Trash2 size={20} /></Button>
+                   
+                   {/* AFFICHAGE DU LIEN POUR ÉVITER LE BUG DE COPIER-COLLER */}
+                   {shareLink && (
+                     <div className="p-4 bg-slate-50 border-2 border-dashed border-primary/20 rounded-2xl animate-in slide-in-from-top">
+                        <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-2 flex justify-between">
+                           Lien généré
+                           <span className="text-emerald-500">Copié !</span>
+                        </p>
+                        <p className="text-[10px] font-mono font-bold text-slate-400 break-all select-all">{shareLink}</p>
+                     </div>
+                   )}
+
+                   <div className="flex gap-3 mt-4">
+                      <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-100 hover:text-primary transition-all" onClick={() => setIsEditing(true)}>Éditer Dossier</Button>
+                      <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl text-slate-200 hover:text-red-500 hover:bg-red-50 border-none transition-all shadow-sm" onClick={() => { if(confirm('Supprimer cette mission ?')) { deleteProject(id); navigate('/'); } }}><Trash2 size={20} /></Button>
+                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 relative z-10 pt-10 border-t border-slate-50">
-                 <div className="space-y-3">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">Avancement Global</p>
-                    <div className="flex items-center gap-4">
-                       <p className="text-4xl font-black text-slate-900">{progress}%</p>
-                       <div className="h-4 flex-1 bg-slate-50 border-none shadow-inner rounded-full overflow-hidden p-0.5 relative">
-                          <div className="h-full gradient-primary rounded-full shadow-lg shadow-primary/20 transition-all duration-1000" style={{ width: `${progress}%` }} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10 pt-10 border-t border-slate-50">
+                 <div className="space-y-4">
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Avancement Global</p>
+                    <div className="flex items-center gap-6">
+                       <p className="text-5xl font-black text-slate-900 leading-none">{progress}%</p>
+                       <div className="h-4 flex-1 bg-slate-50 rounded-full overflow-hidden p-0.5 relative shadow-inner">
+                          <div className="h-full gradient-primary rounded-full shadow-lg transition-all duration-[2000ms]" style={{ width: `${progress}%` }} />
                        </div>
                     </div>
                  </div>
-                 <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">Deadline</p>
-                    <p className="text-3xl font-black text-slate-900">{project.deadline ? format(new Date(project.deadline), 'dd MMM') : '—'}</p>
+                 <div className="space-y-1 md:pl-10 md:border-l border-slate-50">
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Deadline Finale</p>
+                    <p className="text-4xl font-black text-slate-900">{project.deadline ? format(new Date(project.deadline), 'dd MMM') : '—'}</p>
                  </div>
-                 <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">Santé</p>
-                    <p className="text-3xl font-black text-emerald-500">{project.healthScore || 100}%</p>
+                 <div className="space-y-1 md:pl-10 md:border-l border-slate-50">
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">État de Santé</p>
+                    <div className="flex items-center gap-3">
+                       <HeartPulse size={28} className={cn(progress < 20 ? "text-red-500 animate-pulse" : "text-emerald-500")} />
+                       <p className="text-4xl font-black text-slate-900">{progress < 20 && milestones.length > 0 ? 'Critique' : 'Excellente'}</p>
+                    </div>
                  </div>
-                 <Button variant="ghost" className="h-auto py-2 text-slate-300 font-bold text-xs uppercase hover:text-primary self-center bg-slate-50 rounded-xl" onClick={() => setIsEditing(true)}>Modifier Dossier</Button>
               </div>
            </Card>
 
-           <div className="space-y-6">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-300 ml-4 flex items-center gap-2"><Activity size={14} /> Chronologie des Jalons</h3>
-              <div className="grid gap-4">
-                 {milestones.map((m, idx) => (
-                   <Card key={m.id} className="p-6 border-none shadow-xl bg-white rounded-[2rem] flex items-center justify-between group hover:ring-1 hover:ring-primary/20 transition-all scale-in">
-                      <div className="flex items-center gap-6">
+           <div className="space-y-8 px-4">
+              <h3 className="text-sm font-black uppercase tracking-[0.4em] text-slate-300 flex items-center gap-3 italic"><Activity size={18} /> Chronologie Stratégique</h3>
+              <div className="grid gap-6">
+                 {milestones.map((m) => (
+                   <Card key={m.id} className="p-8 border-none shadow-premium bg-white rounded-[2.5rem] flex items-center justify-between group hover:ring-2 hover:ring-primary/20 transition-all scale-in">
+                      <div className="flex items-center gap-8">
+                         {/* TRIPLE STATUS CYCLE : TODO -> DOING -> DONE */}
                          <button 
-                           onClick={() => updateMilestone(id, m.id, { status: m.status === 'done' ? 'todo' : 'done' })}
+                           onClick={() => cycleMilestone(m.id, m.status)}
                            className={cn(
-                             "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all hover:scale-110",
-                             m.status === 'done' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-slate-50 text-slate-300"
+                             "w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-2xl transition-all hover:scale-110",
+                             m.status === 'done' ? "bg-emerald-500 text-white shadow-emerald-500/20" : 
+                             m.status === 'doing' ? "bg-amber-500 text-white shadow-amber-500/20" : 
+                             "bg-slate-50 text-slate-200"
                            )}
                          >
-                            <CheckCircle2 size={24} />
+                            {m.status === 'done' ? <CheckCircle2 size={32} /> : 
+                             m.status === 'doing' ? <Clock size={32} className="animate-spin-slow" /> : 
+                             <Circle size={32} />}
                          </button>
                          <div>
-                            <p className={cn("font-black text-xl tracking-tight", m.status === 'done' && "text-slate-300 line-through")}>{m.name}</p>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-mono tracking-tighter">Échéance : {m.dueDate ? format(new Date(m.dueDate), 'dd MMMM', { locale: fr }) : 'Non planifiée'}</p>
+                            <div className="flex items-center gap-3 mb-1">
+                               <p className={cn("font-black text-2xl tracking-tight transition-all", m.status === 'done' ? "text-slate-300 line-through" : "text-slate-900")}>{m.name}</p>
+                               {m.status === 'doing' && <Badge className="bg-amber-50 text-amber-600 border-none font-black text-[10px] h-6 px-3">EN COURS</Badge>}
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                               <Calendar size={12} /> {m.dueDate ? format(new Date(m.dueDate), 'dd MMMM', { locale: fr }) : 'Non daté'}
+                            </p>
                          </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-slate-200 hover:text-red-500 transition-all" onClick={() => deleteMilestone(id, m.id)}><Trash2 size={18} /></Button>
+                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-slate-200 hover:text-red-500" onClick={() => deleteMilestone(id, m.id)}><Trash2 size={24} /></Button>
                    </Card>
                  ))}
 
-                 <Card className="p-8 border-2 border-dashed border-slate-100 bg-slate-50/20 rounded-[2.5rem] transition-colors hover:border-primary/20">
-                    <form onSubmit={(e) => { e.preventDefault(); if(!newMilestoneName) return; addMilestone(id, { name: newMilestoneName, dueDate: newMilestoneDate ? new Date(newMilestoneDate).toISOString() : null }); setNewMilestoneName(''); setNewMilestoneDate(''); }} className="flex flex-col md:flex-row gap-4">
-                       <Input placeholder="Titre de l'étape à réaliser..." value={newMilestoneName} onChange={e => setNewMilestoneName(e.target.value)} className="h-14 font-black border-none shadow-inner rounded-xl" />
-                       <Input type="date" value={newMilestoneDate} onChange={e => setNewMilestoneDate(e.target.value)} className="h-14 font-black border-none shadow-inner rounded-xl md:w-56" />
-                       <Button type="submit" className="h-14 px-10 gradient-primary border-none text-white font-black rounded-xl shadow-lg">Ajouter</Button>
+                 <Card className="p-10 border-4 border-dashed border-slate-100 bg-slate-50/10 rounded-[3rem] transition-colors hover:border-primary/20">
+                    <form onSubmit={(e) => { e.preventDefault(); if(!newMilestoneName) return; addMilestone(id, { name: newMilestoneName, dueDate: newMilestoneDate ? new Date(newMilestoneDate).toISOString() : null }); setNewMilestoneName(''); setNewMilestoneDate(''); }} className="flex flex-col md:flex-row gap-6">
+                       <Input placeholder="Titre de la prochaine étape..." value={newMilestoneName} onChange={e => setNewMilestoneName(e.target.value)} className="h-16 font-black border-none shadow-inner rounded-2xl bg-white" />
+                       <Input type="date" value={newMilestoneDate} onChange={e => setNewMilestoneDate(e.target.value)} className="h-16 font-black border-none shadow-inner rounded-2xl md:w-64 bg-white" />
+                       <Button type="submit" className="h-16 px-12 gradient-primary border-none text-white font-black rounded-2xl shadow-xl hover:scale-105 transition-all">Ajouter</Button>
                     </form>
                  </Card>
               </div>
            </div>
         </div>
 
-        {/* COLONNE DROITE (NOTES & LOGS) */}
-        <div className="w-full lg:w-96 space-y-8">
-           <Card className="p-8 border-none shadow-2xl bg-white rounded-[2.5rem] ring-1 ring-black/5 flex flex-col group transition-all duration-500 hover:ring-amber-200/50">
-              <div className="flex justify-between items-center mb-6">
-                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-6 shadow-sm"><StickyNote size={20} /></div>
-                    <h3 className="text-xl font-black tracking-tighter">Notes du Projet</h3>
+        {/* COLONNE DROITE — DASHBOARD PROJET */}
+        <div className="w-full lg:w-[450px] space-y-12">
+           <Card className="p-10 border-none shadow-premium bg-white rounded-[3.5rem] ring-1 ring-black/5 flex flex-col group transition-all duration-700 hover:ring-primary/20">
+              <div className="flex justify-between items-center mb-10">
+                 <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-primary/5 text-primary rounded-2xl flex items-center justify-center shadow-sm"><StickyNote size={28} /></div>
+                    <h3 className="text-2xl font-black tracking-tighter text-slate-900">Notes Stratégiques</h3>
                  </div>
               </div>
               <textarea 
-                className="w-full bg-slate-50 border-none rounded-2xl p-6 font-bold text-slate-600 focus:ring-1 focus:ring-amber-200 resize-none min-h-[300px] shadow-inner transition-colors focus:bg-white"
-                placeholder="Ex: À faire valider couleur du flyer... Ne pas oublier de facturer l'acompte..."
+                className="w-full bg-slate-50 border-none rounded-[2rem] p-8 font-bold text-slate-700 focus:ring-2 focus:ring-primary/10 resize-none min-h-[400px] shadow-inner transition-all focus:bg-white text-lg leading-relaxed"
+                placeholder="Ex: Confirmer le pantone client... Facturer la phase 2..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
-              <p className="mt-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center italic">Enregistrement automatique local</p>
+              <p className="mt-6 text-[11px] font-black uppercase text-slate-400 tracking-widest text-center italic">Enregistrement Local Sécurisé ✅</p>
            </Card>
 
-           <Card className="p-8 border-none shadow-2xl bg-white rounded-[2.5rem] ring-1 ring-black/5 group">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 text-slate-400 flex items-center gap-2"><Activity size={14} /> Historique Dossier</h3>
-              <div className="space-y-6">
-                 {(project.logs || []).slice(-5).reverse().map((log, i) => (
-                    <div key={i} className="flex gap-4 items-start animate-in fade-in">
-                       <div className="w-2 h-2 rounded-full bg-primary/40 mt-1.5 shrink-0 group-hover:bg-primary transition-colors duration-1000" />
+           {/* NOM MODIFIÉ : TABLEAU DE BORD PROJET */}
+           <Card className="p-10 border-none shadow-premium bg-slate-900 text-white rounded-[3.5rem] group overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex items-center gap-4 mb-10">
+                 <Activity size={24} className="text-primary animate-pulse" />
+                 <h3 className="text-xl font-black tracking-widest uppercase">Tableau de Bord Projet</h3>
+              </div>
+              <div className="space-y-8 relative z-10">
+                 {(project.logs || []).slice(-6).reverse().map((log, i) => (
+                    <div key={i} className="flex gap-5 items-start animate-in" style={{ animationDelay: `${i * 100}ms` }}>
+                       <div className="w-3 h-3 rounded-full bg-primary/40 mt-1.5 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
                        <div>
-                          <p className="text-xs font-black text-slate-900 leading-none mb-1">{log.action}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{log.details}</p>
+                          <p className="text-sm font-black text-white leading-none mb-2">{log.action}</p>
+                          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{log.details}</p>
+                          <p className="text-[9px] text-slate-600 font-black mt-1">{format(new Date(log.date), 'HH:mm')}</p>
                        </div>
                     </div>
                  ))}
+                 {(!project.logs || project.logs.length === 0) && <p className="text-slate-500 font-black italic">Aucune activité enregistrée.</p>}
+              </div>
+              <div className="mt-12 pt-8 border-t border-white/5 flex items-center justify-between text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
+                 <span>Analyse de Flux</span>
+                 <ArrowUpRight size={16} />
               </div>
            </Card>
         </div>
