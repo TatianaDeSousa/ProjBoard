@@ -8,7 +8,7 @@ import VisualCalendar from '../components/VisualCalendar';
 import { 
   Plus, Search, Calendar, ChevronRight, AlertCircle, Folder, 
   LogOut, User, Contact, Activity, Briefcase, RefreshCcw, 
-  LayoutGrid, StickyNote, CheckCircle2, HeartPulse, Zap, Sparkles, Clock, Target
+  LayoutGrid, StickyNote, CheckCircle2, Zap, Sparkles, Clock, Target
 } from 'lucide-react';
 import { format, isSameMonth, isSameWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -55,7 +55,6 @@ const Dashboard = () => {
 
   const filteredProjects = projects.filter(p => (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (p.client || '').toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // CALCULS STATS 
   const activeCount = projects.filter(p => p.status !== 'done').length;
   const deadlineThisWeek = projects.filter(p => p.deadline && isSameWeek(new Date(p.deadline), new Date(), { weekStartsOn: 1 })).length;
   const inValidation = projects.filter(p => p.milestones?.some(m => m.status === 'doing')).length;
@@ -94,11 +93,9 @@ const Dashboard = () => {
       </div>
 
       <div className="px-4 space-y-20">
-         {/* ORDRE DEMANDÉ : CALENDRIER ET NOTES SIDE-BY-SIDE */}
          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             <div className="lg:col-span-8 flex flex-col">
                <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-300 mb-8 flex items-center gap-3 italic">Calendrier des flux</h3>
-               {/* CALENDRIER TRÈS LÉGÈREMENT PLUS PETIT v2.9.1 */}
                <div className="max-w-[100%] mx-auto w-full"><VisualCalendar projects={projects} /></div>
             </div>
             <div className="lg:col-span-4 flex flex-col">

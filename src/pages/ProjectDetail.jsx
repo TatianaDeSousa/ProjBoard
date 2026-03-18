@@ -4,7 +4,7 @@ import { useProjects, calculateHealthScore } from '../context/ProjectContext';
 import { Button, Card, Badge, Input, cn } from '../components/ui';
 import { 
   ChevronLeft, Calendar, Clock, CheckCircle2, 
-  Plus, Activity, Trash2, Share2, RefreshCcw, StickyNote, AlertCircle, Circle, ArrowUpRight, HeartPulse, Minus, Star
+  Plus, Activity, Trash2, Share2, RefreshCcw, StickyNote, AlertCircle, Circle, ArrowUpRight, Minus, Star
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -32,7 +32,8 @@ const ProjectDetail = () => {
 
   if (!project) return <div className="p-20 text-center font-black text-slate-400">Dossier introuvable...</div>;
 
-  const score = calculateHealthScore(project);
+  // CALCUL SÉCURISÉ DU SCORE
+  const score = calculateHealthScore ? calculateHealthScore(project) : 0;
   const isDanger = score < 40;
 
   const handleSyncShare = async () => {
@@ -82,8 +83,8 @@ const ProjectDetail = () => {
                         "font-black text-[10px] uppercase tracking-widest px-4 h-8 flex items-center gap-2 border-none",
                         score >= 70 ? "bg-emerald-100 text-emerald-600" : score >= 40 ? "bg-amber-100 text-amber-600" : "bg-red-100 text-red-600"
                       )}>
-                         <HeartPulse size={14} /> 
-                         {score >= 70 ? 'Santé Excellente' : score >= 40 ? 'Santé à surveiller' : 'Dossier en danger'} • {score}%
+                         <Activity size={14} /> 
+                         {score >= 70 ? 'Santé OK' : score >= 40 ? 'Moyen' : 'Critique'} • {score}%
                       </Badge>
                       <Badge className="bg-slate-50 text-slate-300 border-none font-black text-[10px] uppercase h-8 px-4 rounded-full italic shadow-sm">ID: {project.id.slice(0,8)}</Badge>
                    </div>
@@ -93,37 +94,33 @@ const ProjectDetail = () => {
 
                 <div className="flex flex-col gap-4 min-w-[300px]">
                    <Button onClick={handleSyncShare} disabled={syncBusy} className="h-20 px-10 font-black gradient-primary border-none text-white rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.4)] hover:scale-105 active:scale-95 transition-all flex gap-4 text-2xl group overflow-hidden relative">
-                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                       {syncBusy ? <RefreshCcw size={32} className="animate-spin" /> : <><Share2 size={32} /> Partager</>}
                    </Button>
                    
                    {shareLink && (
                      <div className="p-6 bg-slate-50 border-2 border-dashed border-primary/20 rounded-[1.5rem] animate-in slide-in-from-top text-center">
-                        <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-2">Lien Client Copié ! ✅</p>
+                        <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-2">Lien Copié ✅</p>
                         <p className="text-[10px] font-mono font-bold text-slate-400 break-all">{shareLink}</p>
                      </div>
                    )}
                 </div>
               </div>
 
-              {/* STATS SANTÉ & SCORE v2.7 */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-10 relative z-10 pt-10 border-t border-slate-50">
                  <div className="md:col-span-2 space-y-6">
-                    <div className="flex justify-between items-end"><p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Score de Vitalité Automatique</p></div>
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Santé Automatique</p>
                     <div className="flex items-center gap-8">
                        <p className={cn("text-7xl font-black leading-none", score >= 70 ? "text-emerald-500" : score >= 40 ? "text-amber-500" : "text-red-500")}>{score}%</p>
                        <div className="flex-1 space-y-2">
                           <div className="h-4 w-full bg-slate-50 rounded-full overflow-hidden p-0.5 relative shadow-inner ring-1 ring-slate-100">
                              <div className={cn("h-full rounded-full transition-all duration-[2000ms] shadow-lg", score >= 70 ? "bg-emerald-500 shadow-emerald-500/20" : score >= 40 ? "bg-amber-500 shadow-amber-500/20" : "bg-red-500 shadow-red-500/20")} style={{ width: `${score}%` }} />
                           </div>
-                          <p className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">Basé sur J+7, Fréquence MAJ, et Retours</p>
                        </div>
                     </div>
                  </div>
 
-                 {/* GESTION DES APPELS/RETOURS v2.7 */}
                  <div className="space-y-3 md:pl-10 md:border-l border-slate-50">
-                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><RefreshCcw size={12} /> Allers-Retours</p>
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Retours Client</p>
                     <div className="flex items-center gap-4">
                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-3xl font-black text-slate-900 shadow-inner">{project.feedbackLoops || 0}</div>
                        <div className="flex flex-col gap-2">
@@ -134,12 +131,9 @@ const ProjectDetail = () => {
                  </div>
 
                  <div className="space-y-4 md:pl-10 md:border-l border-slate-50">
-                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><Activity size={12} /> Avancement</p>
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Global</p>
                     <div className="flex items-end gap-2">
                       <p className="text-5xl font-black text-slate-900 leading-none">{progress}%</p>
-                    </div>
-                    <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-                       <div className="h-full bg-slate-200 rounded-full transition-all" style={{ width: `${progress}%` }} />
                     </div>
                  </div>
               </div>
@@ -157,17 +151,16 @@ const ProjectDetail = () => {
                          <div>
                             <div className="flex items-center gap-4 mb-2">
                                <p className={cn("font-black text-3xl tracking-tighter transition-all", m.status === 'done' ? "text-slate-300 line-through" : "text-slate-900")}>{m.name}</p>
-                               {m.status === 'doing' && <Badge className="bg-amber-50 text-amber-600 border-none font-black text-[10px] h-7 px-4 rounded-full">EN COURS</Badge>}
                             </div>
-                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-3"><Calendar size={14} /> {m.dueDate ? format(new Date(m.dueDate), 'eeee dd MMMM', { locale: fr }) : 'Non planifié'}</p>
+                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-3"><Calendar size={14} /> {m.dueDate ? format(new Date(m.dueDate), 'dd MMMM', { locale: fr }) : 'Non planifié'}</p>
                          </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-slate-200 hover:text-red-500 transition-all scale-125" onClick={() => deleteMilestone(id, m.id)}><Trash2 size={24} /></Button>
+                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-slate-200 hover:text-red-500 transition-all" onClick={() => deleteMilestone(id, m.id)}><Trash2 size={24} /></Button>
                    </Card>
                  ))}
                  <Card className="p-10 border-4 border-dashed border-slate-100 bg-slate-50/10 rounded-[3rem] transition-colors hover:border-primary/20 text-center">
                     <form onSubmit={(e) => { e.preventDefault(); if(!newMilestoneName) return; addMilestone(id, { name: newMilestoneName, dueDate: newMilestoneDate ? new Date(newMilestoneDate).toISOString() : null }); setNewMilestoneName(''); setNewMilestoneDate(''); }} className="flex flex-col md:flex-row gap-6">
-                       <Input placeholder="Intitulé de l'étape de mission..." value={newMilestoneName} onChange={e => setNewMilestoneName(e.target.value)} className="h-20 font-black border-none shadow-inner rounded-[1.5rem] bg-white text-xl" />
+                       <Input placeholder="Intitulé de l'étape..." value={newMilestoneName} onChange={e => setNewMilestoneName(e.target.value)} className="h-20 font-black border-none shadow-inner rounded-[1.5rem] bg-white text-xl" />
                        <Input type="date" value={newMilestoneDate} onChange={e => setNewMilestoneDate(e.target.value)} className="h-20 font-black border-none shadow-inner rounded-[1.5rem] md:w-64 bg-white" />
                        <Button type="submit" className="h-20 px-12 gradient-primary border-none text-white font-black rounded-[1.5rem] shadow-xl hover:scale-105 transition-all text-xl">Planifier</Button>
                     </form>
@@ -179,17 +172,16 @@ const ProjectDetail = () => {
         <div className="w-full lg:w-[450px] space-y-12">
            <Card className="p-12 border-none shadow-premium bg-white rounded-[4rem] flex flex-col group transition-all duration-700 hover:ring-primary/20">
               <div className="flex items-center gap-4 mb-10"><div className="w-16 h-16 bg-primary/5 text-primary rounded-[1.5rem] flex items-center justify-center shadow-sm"><StickyNote size={32} /></div><h3 className="text-3xl font-black tracking-tighter text-slate-900">Briefing</h3></div>
-              <textarea className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 font-bold text-slate-700 focus:ring-2 focus:ring-primary/10 resize-none min-h-[500px] shadow-inner transition-all focus:bg-white text-xl leading-relaxed" placeholder="Brief créatif, notes de réunion, spécifications techniques..." value={notes} onChange={(e) => setNotes(e.target.value)} />
-              <p className="mt-8 text-[11px] font-black uppercase text-slate-400 tracking-widest text-center italic">ProjBoard Note System v2.7 ✅</p>
+              <textarea className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 font-bold text-slate-700 focus:ring-2 focus:ring-primary/10 resize-none min-h-[500px] shadow-inner transition-all focus:bg-white text-xl leading-relaxed" placeholder="Notes..." value={notes} onChange={(e) => setNotes(e.target.value)} />
            </Card>
 
            <Card className="p-10 border-none shadow-premium bg-slate-900 text-white rounded-[4rem] group overflow-hidden relative">
-              <div className="flex items-center gap-6 mb-12"><Activity size={32} className="text-primary animate-pulse" /><h3 className="text-2xl font-black tracking-tighter uppercase">Board de Pilotage</h3></div>
+              <div className="flex items-center gap-6 mb-12"><Activity size={32} className="text-primary animate-pulse" /><h3 className="text-2xl font-black tracking-tighter uppercase">Board</h3></div>
               <div className="space-y-10 relative z-10">
                  {(project.logs || []).slice(-8).reverse().map((log, i) => (
                     <div key={i} className="flex gap-6 items-start animate-in" style={{ animationDelay: `${i * 100}ms` }}>
                        <div className="w-3.5 h-3.5 rounded-full bg-primary/40 mt-1.5 shadow-[0_0_12px_rgba(99,102,241,0.6)]" />
-                       <div><p className="text-base font-black text-white leading-none mb-2">{log.action}</p><p className="text-xs text-slate-400 font-bold uppercase tracking-widest italic">{log.details}</p><p className="text-[10px] text-slate-600 font-black mt-1.5">{format(new Date(log.date), 'HH:mm — dd MMM')}</p></div>
+                       <div><p className="text-base font-black text-white leading-none mb-1">{log.action}</p><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{log.details}</p></div>
                     </div>
                  ))}
               </div>
