@@ -14,6 +14,7 @@ import Teams from './pages/Teams';
 import Contacts from './pages/Contacts';
 import TeamWorkload from './pages/TeamWorkload';
 import Notifications from './pages/Notifications';
+import AuthCallback from './pages/AuthCallback';
 import './App.css';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
               <Route path="/client" element={<ShareView />} />
               <Route path="/team-workload" element={<TeamWorkload />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
             </Routes>
           </div>
         </Router>

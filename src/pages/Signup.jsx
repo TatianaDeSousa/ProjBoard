@@ -71,7 +71,6 @@ const Signup = () => {
     console.log('[Signup] handleSubmit called');
     console.log('[Signup] VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ present' : '❌ MISSING');
     console.log('[Signup] VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ present' : '❌ MISSING');
-    console.log('[Signup] Attempting signup with email:', email, 'name:', name);
 
     if (!email || !password || !name) {
       setError('Tous les champs sont obligatoires.');
@@ -89,19 +88,28 @@ const Signup = () => {
       const user = await signup(email, password, name);
       console.log('[Signup] signup() returned:', user);
 
-      // Supabase may require email confirmation — handle that case gracefully
-      if (user && !user.confirmed_at && !user.email_confirmed_at) {
-        console.log('[Signup] Email confirmation may be required');
-        setSuccess(true);
+      if (!user) {
+        setError('Inscription échouée. Vérifiez vos informations.');
         setLoading(false);
         return;
       }
 
-      // If no confirmation needed, the auth listener will handle navigation
-      setLoading(false);
+      // Check if confirmation is required (user exists but no session = confirmation needed)
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Signup] session after signup:', session ? 'active ✅' : 'none (confirmation needed)');
+
+      if (session) {
+        // No confirmation needed — navigate immediately
+        console.log('[Signup] Instant login, redirecting to dashboard');
+        navigate(teamToken ? `/join/${teamToken}` : '/');
+      } else {
+        // Confirmation email was sent
+        console.log('[Signup] Email confirmation required');
+        setSuccess(true);
+        setLoading(false);
+      }
     } catch (err) {
       console.error('[Signup] signup() threw:', err);
-      // Provide French-friendly error messages
       if (err.message?.includes('already registered') || err.message?.includes('User already registered')) {
         setError('Cette adresse email est déjà utilisée. Essayez de vous connecter.');
       } else if (err.message?.includes('Password should be')) {
