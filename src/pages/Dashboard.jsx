@@ -3,6 +3,7 @@ import { useProjects } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, Input, cn } from '../components/ui';
+import AIAttackPlan from '../components/AIAttackPlan';
 import VisualCalendar from '../components/VisualCalendar';
 import { Plus, Search, Calendar, ChevronRight, AlertCircle, Users, LogOut, User, Contact, Activity, Briefcase, Bell, Link as LinkIcon, RefreshCcw } from 'lucide-react';
 import { format } from 'date-fns';
@@ -105,7 +106,6 @@ const Dashboard = () => {
   if (!currentUser) return null;
 
   const unreadCount = (notifications || []).filter(n => !n.read).length;
-  const isSolo = teams.length === 0;
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -162,21 +162,20 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <Card className="p-6 bg-indigo-50/50 border-indigo-100 shadow-none ring-1 ring-indigo-200/50">
-          <p className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-1">Dossiers Actifs</p>
+        <Card className="p-6 bg-indigo-50/50 border-indigo-100">
+          <p className="text-xs font-black text-indigo-600 uppercase mb-1">Dossiers Actifs</p>
           <p className="text-4xl font-black text-indigo-900">{activeProjects.length}</p>
-          <p className="text-[10px] text-indigo-500/60 font-black mt-2">{uniqueClients} client(s)</p>
         </Card>
-        <Card className="p-6 bg-red-50/50 border-red-100 shadow-none ring-1 ring-red-200/50">
-          <p className="text-xs font-black text-red-600 uppercase tracking-widest mb-1">Alertes Retard</p>
+        <Card className="p-6 bg-red-50/50 border-red-100">
+          <p className="text-xs font-black text-red-600 uppercase mb-1">Alertes Retard</p>
           <p className="text-4xl font-black text-red-900">{delayedDeadlines}</p>
         </Card>
-        <Card className="p-6 bg-emerald-50/50 border-emerald-100 shadow-none ring-1 ring-emerald-200/50">
-          <p className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">Terminés / Mois</p>
+        <Card className="p-6 bg-emerald-50/50 border-emerald-100">
+          <p className="text-xs font-black text-emerald-600 uppercase mb-1">Terminés / Mois</p>
           <p className="text-4xl font-black text-emerald-900">{finishedThisMonth.length}</p>
         </Card>
-        <Card className="p-6 bg-orange-50/50 border-orange-100 shadow-none ring-1 ring-orange-200/50">
-          <p className="text-xs font-black text-orange-600 uppercase tracking-widest mb-1">Zombies 🧟</p>
+        <Card className="p-6 bg-orange-50/50 border-orange-100">
+          <p className="text-xs font-black text-orange-600 uppercase mb-1">Zombies 🧟</p>
           <p className="text-4xl font-black text-orange-900">{zombieProjects.length}</p>
         </Card>
       </div>
@@ -193,7 +192,6 @@ const Dashboard = () => {
                    <Card className="p-6 border-red-200 bg-red-50/20 hover:bg-red-50 transition-all">
                       <h3 className="font-black text-red-700">{z.name}</h3>
                       <p className="text-xs text-red-400 font-bold uppercase">{z.client}</p>
-                      <p className="text-[10px] text-red-400 mt-2 font-black italic">Aucune étape validée + retard</p>
                    </Card>
                  </Link>
                ))}
@@ -201,18 +199,12 @@ const Dashboard = () => {
          </div>
       )}
 
+      <VisualCalendar projects={projects} />
+      <AIAttackPlan projects={projects} />
+
       <div className="flex flex-col md:flex-row gap-4 mb-12">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <Input placeholder="Rechercher…" className="pl-10 h-12 text-lg shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-        </div>
-        <select className="h-12 rounded-md border border-input bg-background px-4 font-bold uppercase tracking-wider shadow-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">Tous les statuts</option>
-          <option value="on_track">En bonne voie</option>
-          <option value="at_risk">À risque</option>
-          <option value="delayed">En retard</option>
-          <option value="done">Terminé</option>
-        </select>
+        <Search className="text-muted-foreground mr-2" />
+        <Input placeholder="Rechercher…" className="h-12 text-lg shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
 
       <div className="space-y-16">
