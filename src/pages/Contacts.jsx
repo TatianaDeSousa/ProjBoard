@@ -15,28 +15,41 @@ const Contacts = () => {
   const [newPhone, setNewPhone] = useState('');
   const [newAddress, setNewAddress] = useState('');
 
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const filteredContacts = contacts.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.address && c.address.toLowerCase().includes(searchTerm.toLowerCase()))
+    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (c.company || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.address || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    addContact({
-      name: newName,
-      company: newCompany,
-      email: newEmail,
-      phone: newPhone,
-      address: newAddress
-    });
-    setNewName('');
-    setNewCompany('');
-    setNewEmail('');
-    setNewPhone('');
-    setNewAddress('');
-    setIsAdding(false);
+    setSaving(true);
+    setError('');
+    try {
+      console.log('[Contacts] addContact called:', newName, newEmail);
+      await addContact({
+        name: newName,
+        company: newCompany,
+        email: newEmail,
+        phone: newPhone,
+        address: newAddress
+      });
+      setNewName('');
+      setNewCompany('');
+      setNewEmail('');
+      setNewPhone('');
+      setNewAddress('');
+      setIsAdding(false);
+      console.log('[Contacts] contact saved successfully');
+    } catch (err) {
+      console.error('[Contacts] addContact error:', err);
+      setError(err.message || 'Erreur lors de la sauvegarde.');
+    }
+    setSaving(false);
   };
 
   return (
@@ -68,6 +81,11 @@ const Contacts = () => {
       {isAdding && (
         <Card className="p-10 mb-16 border-none shadow-2xl bg-white scale-in">
           <form onSubmit={handleSubmit} className="space-y-8">
+            {error && (
+              <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-sm font-bold flex items-center gap-3">
+                ⚠️ {error}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nom complet</label>
@@ -91,7 +109,9 @@ const Contacts = () => {
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Adresse de facturation / Bureau</label>
                 <Input placeholder="123 Rue de la Paix, 75000 Paris" value={newAddress} onChange={e => setNewAddress(e.target.value)} className="h-14 font-black" />
               </div>
-              <Button type="submit" className="h-14 px-12 font-black gradient-primary border-none shadow-lg w-full md:w-auto">Créer le contact</Button>
+              <Button type="submit" disabled={saving} className="h-14 px-12 font-black gradient-primary border-none shadow-lg w-full md:w-auto disabled:opacity-70">
+                {saving ? 'Enregistrement…' : 'Créer le contact'}
+              </Button>
             </div>
           </form>
         </Card>

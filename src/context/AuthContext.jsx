@@ -125,19 +125,33 @@ export const AuthProvider = ({ children }) => {
   };
 
   const createTeam = async (name) => {
-    if (!currentUser) return;
+    if (!currentUser) throw new Error('Vous devez être connecté.');
+    console.log('[AuthContext] createTeam:', name);
     const { data, error } = await supabase
       .from('teams')
       .insert([{ name, owner_id: currentUser.id }])
       .select()
       .single();
 
+    if (error) {
+      console.error('[AuthContext] createTeam error:', error);
+      throw new Error(error.message);
+    }
+
     if (data) {
-      // Also add as member
       await supabase.from('team_members').insert([{ team_id: data.id, user_id: currentUser.id, role: 'owner' }]);
-      fetchTeams(currentUser.id);
+      await fetchTeams(currentUser.id);
+      console.log('[AuthContext] team created:', data.id);
     }
     return data;
+  };
+
+  const deleteTeam = async (teamId) => {
+    if (!currentUser) return;
+    console.log('[AuthContext] deleteTeam:', teamId);
+    const { error } = await supabase.from('teams').delete().eq('id', teamId).eq('owner_id', currentUser.id);
+    if (error) { console.error('[AuthContext] deleteTeam error:', error); throw new Error(error.message); }
+    await fetchTeams(currentUser.id);
   };
 
   const inviteUserToTeam = async (teamId, email) => {
@@ -228,6 +242,7 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       createTeam,
+      deleteTeam,
       inviteUserToTeam,
       acceptTeamInvitation,
       rejectTeamInvitation,

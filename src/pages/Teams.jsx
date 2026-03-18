@@ -19,22 +19,37 @@ const Teams = () => {
   const [memberEmail, setMemberEmail] = useState('');
   const [showProjectLinker, setShowProjectLinker] = useState(null);
   const [error, setError] = useState(null);
-  const [inviteResult, setInviteResult] = useState(null); // { type: 'external', token: '...', email: '...' }
+  const [inviteResult, setInviteResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
-  const handleCreateTeam = (e) => {
+  const handleCreateTeam = async (e) => {
     e.preventDefault();
     if (!newTeamName.trim()) return;
-    createTeam(newTeamName);
-    setNewTeamName('');
-    setIsCreating(false);
+    setSaving(true);
+    try {
+      console.log('[Teams] createTeam:', newTeamName);
+      await createTeam(newTeamName);
+      setNewTeamName('');
+      setIsCreating(false);
+      console.log('[Teams] team created');
+    } catch (err) {
+      console.error('[Teams] createTeam error:', err);
+      setError(err.message || 'Erreur lors de la création du groupe.');
+      setTimeout(() => setError(null), 4000);
+    }
+    setSaving(false);
   };
 
-  const handleAddMember = (teamId) => {
+  const handleAddMember = async (teamId) => {
     if (!memberEmail.trim()) return;
+    setInviting(true);
     try {
-      const result = inviteUserToTeam(teamId, memberEmail);
+      console.log('[Teams] inviteUserToTeam:', teamId, memberEmail);
+      const result = await inviteUserToTeam(teamId, memberEmail);
+      console.log('[Teams] invite result:', result);
       if (result.type === 'internal') {
-        alert("Invitation envoyée au collaborateur !");
+        alert('Invitation envoyée au collaborateur !');
         setMemberEmail('');
       } else {
         setInviteResult({ ...result, email: memberEmail });
@@ -42,9 +57,11 @@ const Teams = () => {
       }
       setError(null);
     } catch (err) {
-      setError(err.message);
-      setTimeout(() => setError(null), 3000);
+      console.error('[Teams] inviteUserToTeam error:', err);
+      setError(err.message || 'Erreur lors de l\'invitation.');
+      setTimeout(() => setError(null), 4000);
     }
+    setInviting(false);
   };
 
   const toggleProjectToTeam = async (projectId, teamId) => {
@@ -121,7 +138,9 @@ const Teams = () => {
                 className="h-14 font-black text-xl shadow-inner bg-slate-50/50"
               />
             </div>
-            <Button type="submit" className="h-14 px-12 font-black gradient-primary border-none shadow-lg">Lancer le groupe</Button>
+            <Button type="submit" disabled={saving} className="h-14 px-12 font-black gradient-primary border-none shadow-lg disabled:opacity-70">
+              {saving ? 'Création…' : 'Lancer le groupe'}
+            </Button>
           </form>
         </Card>
       )}
