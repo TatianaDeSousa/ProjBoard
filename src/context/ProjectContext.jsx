@@ -24,7 +24,7 @@ export const ProjectProvider = ({ children }) => {
       deadline: projectData.deadline || null,
       folderId: projectData.folderId || null,
       milestones: [],
-      logs: [{ id: crypto.randomUUID(), date: new Date().toISOString(), action: 'Dossier Créé', details: 'Initialisation système' }],
+      logs: [{ id: crypto.randomUUID(), date: new Date().toISOString(), action: 'Dossier Créé', details: `Dossier ${projectData.name} initialisé` }],
       updatedAt: new Date().toISOString(),
     };
     setProjects([newProject, ...projects]);
@@ -32,7 +32,16 @@ export const ProjectProvider = ({ children }) => {
   };
 
   const updateProject = (projectId, updates) => {
-    setProjects(projects.map(p => p.id === projectId ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
+    setProjects(projects.map(p => p.id === projectId ? { 
+      ...p, 
+      ...updates, 
+      updatedAt: new Date().toISOString(),
+      // Ajout auto d'un log si on change le statut
+      logs: updates.status && updates.status !== p.status ? [
+        ...p.logs, 
+        { id: crypto.randomUUID(), date: new Date().toISOString(), action: 'Statut Changé', details: `Passage vers ${updates.status}` }
+      ] : p.logs
+    } : p));
   };
 
   const deleteProject = (projectId) => setProjects(projects.filter(p => p.id !== projectId));
@@ -41,7 +50,11 @@ export const ProjectProvider = ({ children }) => {
     setProjects(projects.map(p => {
       if (p.id === projectId) {
         const newM = { id: crypto.randomUUID(), status: 'todo', ...milestone };
-        return { ...p, milestones: [...(p.milestones || []), newM] };
+        return { 
+          ...p, 
+          milestones: [...(p.milestones || []), newM],
+          logs: [...(p.logs || []), { id: crypto.randomUUID(), date: new Date().toISOString(), action: 'Nouvelle Étape', details: `Ajout : ${milestone.name}` }]
+        };
       }
       return p;
     }));
@@ -50,8 +63,16 @@ export const ProjectProvider = ({ children }) => {
   const updateMilestone = (projectId, milestoneId, updates) => {
     setProjects(projects.map(p => {
       if (p.id === projectId) {
+        const milestone = p.milestones.find(m => m.id === milestoneId);
         const newMs = (p.milestones || []).map(m => m.id === milestoneId ? { ...m, ...updates } : m);
-        return { ...p, milestones: newMs };
+        
+        // CORRECTION HISTORIQUE (NOM AU LIEU DE ID)
+        let logAction = p.logs;
+        if (updates.status === 'done') {
+           logAction = [...p.logs, { id: crypto.randomUUID(), date: new Date().toISOString(), action: 'Étape Validée', details: `Jalon terminé : ${milestone?.name || 'Inconnu'}` }];
+        }
+        
+        return { ...p, milestones: newMs, logs: logAction, updatedAt: new Date().toISOString() };
       }
       return p;
     }));
@@ -61,14 +82,13 @@ export const ProjectProvider = ({ children }) => {
     setProjects(projects.map(p => p.id === projectId ? { ...p, milestones: (p.milestones || []).filter(m => m.id !== milestoneId) } : p));
   };
 
-  // 🚀 NOUVELLE LOGIQUE DE PARTAGE (V3 ROBUSTE)
+  // 🚀 PARTAGE V4 REFORCÉ (avec project_id TEXT)
   const getShareLink = async (projectId) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return null;
 
     try {
-      console.log('[Sync Cloud] Recherche du lien pour :', projectId);
-      // On cherche par la nouvelle colonne project_id
+      console.log('[SUPABASE V4] Sync en cours...');
       const { data: existing, error: selectError } = await supabase
         .from('client_links')
         .select('token')
@@ -78,7 +98,6 @@ export const ProjectProvider = ({ children }) => {
       if (selectError) throw selectError;
 
       if (existing) {
-        console.log('[Sync Cloud] Mise à jour du lien existant :', existing.token);
         const { error: upError } = await supabase
           .from('client_links')
           .update({ project_data: project })
@@ -86,7 +105,6 @@ export const ProjectProvider = ({ children }) => {
         if (upError) throw upError;
         return existing.token;
       } else {
-        console.log('[Sync Cloud] Premier partage, création du lien...');
         const { data, error: insError } = await supabase
           .from('client_links')
           .insert([{ project_id: projectId, project_data: project }])
@@ -96,9 +114,10 @@ export const ProjectProvider = ({ children }) => {
         return data.token;
       }
     } catch (err) {
-      console.error('[CRITIQUE] Échec Synchronisation Supabase :', err);
-      // On log l'erreur pour que l'utilisateur puisse la voir dans sa console Vercel/Locale
-      alert("Erreur de synchronisation cloud. Vérifiez que vous avez bien exécuté le SQL v3 dans Supabase.");
+      console.error('[ERREUR FATALE] Sync Cloud Impossible :', err);
+      // Tentative de diagnostic pour l'utilisateur
+      if (err.message?.includes('not found')) alert("La table client_links n'existe pas. Veuillez exécuter le SQL v4.");
+      if (err.message?.includes('policy')) alert("Accès refusé par Supabase. RLS à corriger via SQL v4.");
       throw err;
     }
   };

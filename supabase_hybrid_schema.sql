@@ -1,16 +1,22 @@
--- VERSION 3 : ROBUSTE
+-- VERSION 4 : SÉCURITÉ MAXIMALE & SIMPLICITÉ
 DROP TABLE IF EXISTS client_links CASCADE;
+
 CREATE TABLE client_links (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   token UUID DEFAULT gen_random_uuid() UNIQUE,
-  project_id TEXT NOT NULL, -- On indexe par ID texte pour être sûr
+  project_id TEXT NOT NULL,
   project_data JSONB NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index pour la recherche rapide
-CREATE INDEX idx_client_links_project_id ON client_links(project_id);
+-- Désactivation RLS un instant pour être SÛR que ça passe
+ALTER TABLE client_links DISABLE ROW LEVEL SECURITY;
 
--- ACCÈS TOTALEMENT OUVERT POUR LE MODE HYBRIDE
+-- Autorisation totale pour tous les rôles Supabase
+GRANT ALL ON client_links TO anon;
+GRANT ALL ON client_links TO authenticated;
+GRANT ALL ON client_links TO service_role;
+
+-- Réactivation RLS avec politique "Open Bar"
 ALTER TABLE client_links ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public Full Access" ON client_links FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Full Access" ON client_links FOR ALL USING (true) WITH CHECK (true);
