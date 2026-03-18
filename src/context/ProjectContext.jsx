@@ -22,11 +22,9 @@ export const ProjectProvider = ({ children }) => {
       progress: 0,
       healthScore: 100,
       deadline: projectData.deadline || null,
-      folderId: projectData.folderId || null, // UTILISE FOLDER ID
+      folderId: projectData.folderId || null,
       milestones: [],
-      logs: [{ id: crypto.randomUUID(), date: new Date().toISOString(), action: 'Projet Créé', details: 'Dossier initialisé' }],
-      feedback: [],
-      createdAt: new Date().toISOString(),
+      logs: [{ id: crypto.randomUUID(), date: new Date().toISOString(), action: 'Dossier Créé', details: 'Initialisation système' }],
       updatedAt: new Date().toISOString(),
     };
     setProjects([newProject, ...projects]);
@@ -63,20 +61,45 @@ export const ProjectProvider = ({ children }) => {
     setProjects(projects.map(p => p.id === projectId ? { ...p, milestones: (p.milestones || []).filter(m => m.id !== milestoneId) } : p));
   };
 
+  // 🚀 NOUVELLE LOGIQUE DE PARTAGE (V3 ROBUSTE)
   const getShareLink = async (projectId) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return null;
 
-    // Supabase Sync (Cloud)
-    const { data: existing } = await supabase.from('client_links').select('token').eq('project_data->>id', projectId).maybeSingle();
-    
-    if (existing) {
-      await supabase.from('client_links').update({ project_data: project }).eq('token', existing.token);
-      return existing.token;
-    } else {
-      const { data, error } = await supabase.from('client_links').insert([{ project_data: project }]).select().single();
-      if (error) throw error;
-      return data.token;
+    try {
+      console.log('[Sync Cloud] Recherche du lien pour :', projectId);
+      // On cherche par la nouvelle colonne project_id
+      const { data: existing, error: selectError } = await supabase
+        .from('client_links')
+        .select('token')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      
+      if (selectError) throw selectError;
+
+      if (existing) {
+        console.log('[Sync Cloud] Mise à jour du lien existant :', existing.token);
+        const { error: upError } = await supabase
+          .from('client_links')
+          .update({ project_data: project })
+          .eq('token', existing.token);
+        if (upError) throw upError;
+        return existing.token;
+      } else {
+        console.log('[Sync Cloud] Premier partage, création du lien...');
+        const { data, error: insError } = await supabase
+          .from('client_links')
+          .insert([{ project_id: projectId, project_data: project }])
+          .select()
+          .single();
+        if (insError) throw insError;
+        return data.token;
+      }
+    } catch (err) {
+      console.error('[CRITIQUE] Échec Synchronisation Supabase :', err);
+      // On log l'erreur pour que l'utilisateur puisse la voir dans sa console Vercel/Locale
+      alert("Erreur de synchronisation cloud. Vérifiez que vous avez bien exécuté le SQL v3 dans Supabase.");
+      throw err;
     }
   };
 
