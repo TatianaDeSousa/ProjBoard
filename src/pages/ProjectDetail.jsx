@@ -119,9 +119,14 @@ const ProjectDetail = () => {
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 relative z-10 pt-10 border-t border-slate-50">
-                 <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">Avancement</p>
-                    <p className="text-4xl font-black text-slate-900">{progress}%</p>
+                 <div className="space-y-3">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">Avancement Global</p>
+                    <div className="flex items-center gap-4">
+                       <p className="text-4xl font-black text-slate-900">{progress}%</p>
+                       <div className="h-4 flex-1 bg-slate-50 border-none shadow-inner rounded-full overflow-hidden p-0.5 relative">
+                          <div className="h-full gradient-primary rounded-full shadow-lg shadow-primary/20 transition-all duration-1000" style={{ width: `${progress}%` }} />
+                       </div>
+                    </div>
                  </div>
                  <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic">Deadline</p>
