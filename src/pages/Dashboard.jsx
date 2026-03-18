@@ -175,8 +175,8 @@ const Dashboard = () => {
   });
 
   const inValidation = projects.filter(p => {
-    return p.milestones.some(m => 
-      (m.name.toLowerCase().includes('validation')) && 
+    return (p.milestones || []).some(m =>
+      (m.name?.toLowerCase().includes('validation')) &&
       (m.status === 'in_progress' || m.status === 'done') &&
       p.status !== 'done'
     );
@@ -191,8 +191,38 @@ const Dashboard = () => {
     return (a.healthScore || 100) - (b.healthScore || 100);
   });
 
-  const personalProjects = filteredProjects.filter(p => !p.teamId);
-  const teamProjects = filteredProjects.filter(p => p.teamId);
+  const personalProjects = filteredProjects.filter(p => !p.team_id && !p.teamId);
+  const teamProjects = filteredProjects.filter(p => p.team_id || p.teamId);
+
+  // Zombie projects: no activity in milestones + not done
+  const zombieProjects = projects.filter(p => {
+    if (p.status === 'done') return false;
+    const milestones = p.milestones || [];
+    if (milestones.length === 0) return false;
+    const allTodo = milestones.every(m => m.status === 'todo');
+    if (!allTodo) return false;
+    const deadline = new Date(p.deadline);
+    const now = new Date();
+    return deadline < now; // overdue and nothing started
+  });
+
+  // AI advice: projects that need attention
+  const aiAdvice = [];
+  if (zombieProjects.length > 0) {
+    aiAdvice.push({ icon: '🧟', text: `${zombieProjects.length} projet(s) zombie(s) sans aucune activité. Archivez ou relancez-les.` });
+  }
+  if (delayedDeadlines > 0) {
+    aiAdvice.push({ icon: '🔴', text: `${delayedDeadlines} projet(s) en retard. Priorisez une réunion de suivi.` });
+  }
+  if (deadlinesThisWeek.length > 0) {
+    aiAdvice.push({ icon: '⚡', text: `${deadlinesThisWeek.length} deadline(s) cette semaine. Vérifiez l'avancement quotidiennement.` });
+  }
+  if (inValidation.length > 0) {
+    aiAdvice.push({ icon: '⏳', text: `${inValidation.length} projet(s) en attente de validation client. Relancez si +48h de silence.` });
+  }
+  if (aiAdvice.length === 0 && activeProjects.length > 0) {
+    aiAdvice.push({ icon: '✅', text: 'Tous vos projets sont dans les temps. Continuez ainsi !' });
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 animate-in text-slate-900">
@@ -303,9 +333,55 @@ const Dashboard = () => {
       </div>
 
       <div className="space-y-16">
+        {/* Zombie Projects */}
+        {zombieProjects.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b pb-4">
+              <div className="p-2 bg-red-100 text-red-500 rounded-lg"><AlertCircle size={20} /></div>
+              <h2 className="text-2xl font-bold tracking-tight">Projets Zombies</h2>
+              <Badge variant="secondary" className="ml-auto font-black bg-red-100 text-red-600">{zombieProjects.length}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">Ces projets sont en retard et n'ont aucune activité. Archivez ou relancez-les.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {zombieProjects.map(project => (
+                <Link key={project.id} to={`/project/${project.id}`} className="block">
+                  <Card className="p-6 border-red-200 bg-red-50/30 hover:shadow-xl transition-all">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl">🧟</span>
+                      <div>
+                        <h3 className="font-black text-slate-900">{project.name}</h3>
+                        <p className="text-xs text-red-500 font-bold uppercase">{project.client}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-red-400 font-black">Deadline dépassée — aucune étape démarrée</p>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* AI Tips */}
+        {aiAdvice.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b pb-4">
+              <div className="p-2 bg-indigo-100 text-indigo-500 rounded-lg"><Activity size={20} /></div>
+              <h2 className="text-2xl font-bold tracking-tight">Conseils IA</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {aiAdvice.map((tip, i) => (
+                <div key={i} className="flex items-start gap-4 p-5 bg-white rounded-2xl ring-1 ring-black/5 shadow-sm">
+                  <span className="text-2xl shrink-0">{tip.icon}</span>
+                  <p className="text-sm font-medium text-slate-700 leading-relaxed">{tip.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <ProjectList 
           projects={personalProjects} 
-          title="Mes Projets Organisés Particulier" 
+          title="Mes Projets Personnels" 
           icon={User} 
         />
 
